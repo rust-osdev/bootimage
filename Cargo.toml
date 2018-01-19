@@ -1,0 +1,11 @@
+[package]
+authors = ["Philipp Oppermann <dev@phil-opp.com>"]
+name = "bootimage"
+version = "0.1.0"
+
+[dependencies]
+byteorder = "1.2.1"
+git2 = "0.6.11"
+structopt = "0.1.6"
+structopt-derive = "0.1.6"
+xmas-elf = "0.6.1"
