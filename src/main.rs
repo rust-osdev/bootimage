@@ -7,6 +7,7 @@ extern crate git2;
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
+extern crate toml;
 
 use std::io;
 use std::io::prelude::*;
@@ -26,26 +27,62 @@ struct Opt {
 
     #[structopt(short = "o", long = "output", help = "Output file", default_value = "image.bin")]
     output: String,
+
+    #[structopt(long = "target", help = "Target triple")]
+    target: Option<String>,
 }
 
 fn main() -> io::Result<()> {
     let opt = Opt::from_args();
+    let mut pwd = std::env::current_dir()?;
 
-    let pwd = std::env::current_dir()?;
-    let kernel_target = "test-rewrite";
+    // try to find Cargo.toml to find root dir and read crate name
+    let crate_name = loop {
+        let mut cargo_toml_path = pwd.clone();
+        cargo_toml_path.push("Cargo.toml");
+        match File::open(cargo_toml_path) {
+            Err(ref e) if e.kind() == io::ErrorKind::NotFound => {
+                if !pwd.pop() {
+                    panic!("Cargo.toml not found");
+                }
+            }
+            Err(e) => return Err(e),
+            Ok(mut file) => {
+                // Cargo.toml found! pwd is already the root path, so we just need
+                // to set the crate name
+                let mut content = String::new();
+                file.read_to_string(&mut content)?;
+                let toml = content.parse::<toml::Value>().ok();
+                if let Some(toml) = toml {
+                    if let Some(crate_name) = toml.get("package")
+                        .and_then(|package| package.get("name")).and_then(|n| n.as_str())
+                    {
+                        break String::from(crate_name);
+                    }
+                }
+                panic!("Cargo.toml invalid");
+            }
+        }
+    };
+
     let bootloader_target = "test";
+    let kernel_target = opt.target.as_ref().map(String::as_str);
 
     // compile kernel
     let exit_status = run_xargo_build(&pwd, kernel_target, opt.release)?;
     if !exit_status.success() { std::process::exit(1) }
 
-    let mut bootloader_dir = pwd.to_path_buf();
-    bootloader_dir.push("target/test-rewrite");
-    if opt.release {
-        bootloader_dir.push("release");
-    } else {
-        bootloader_dir.push("debug");
+    let mut out_dir = pwd.to_path_buf();
+    out_dir.push("target");
+    if let Some(target) = kernel_target {
+        out_dir.push(target);
     }
+    if opt.release {
+        out_dir.push("release");
+    } else {
+        out_dir.push("debug");
+    }
+    let mut bootloader_dir = out_dir.clone();
     bootloader_dir.push("bootloader");
     if !bootloader_dir.exists() {
         // download bootloader from github repo
@@ -59,7 +96,7 @@ fn main() -> io::Result<()> {
     if !bootloader_path.exists() {
         // compile bootloader
         println!("Compiling bootloader...");
-        let exit_status = run_xargo_build(&bootloader_dir, bootloader_target, true)?;
+        let exit_status = run_xargo_build(&bootloader_dir, Some(bootloader_target), true)?;
         if !exit_status.success() { std::process::exit(1) }
 
         let mut bootloader_elf_path = bootloader_dir.to_path_buf();
@@ -81,7 +118,9 @@ fn main() -> io::Result<()> {
 
     let mut output = File::create(opt.output)?;
 
-    let mut kernel = File::open("target/test-rewrite/debug/blog_os_rewrite")?;
+    let mut kernel_path = out_dir.clone();
+    kernel_path.push(crate_name);
+    let mut kernel = File::open(kernel_path)?;
     let kernel_size = kernel.metadata()?.len();
     let kernel_size = u32::try_from(kernel_size).expect("kernel too big");
     let mut kernel_interface_block = [0u8; 512];
@@ -110,10 +149,13 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-fn run_xargo_build(pwd: &Path, target: &str, release: bool) -> io::Result<std::process::ExitStatus> {
-    let args = &["build", "--target", target];
+fn run_xargo_build(pwd: &Path, target: Option<&str>, release: bool) -> io::Result<std::process::ExitStatus> {
     let mut command = Command::new("xargo");
-    command.current_dir(pwd).args(args).env("RUST_TARGET_PATH", pwd);
+    command.current_dir(pwd).env("RUST_TARGET_PATH", pwd);
+    command.arg("build");
+    if let Some(target) = target {
+        command.arg("--target").arg(target);
+    }
     if release {
         command.arg("--release");
     }

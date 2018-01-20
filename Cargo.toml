@@ -1,7 +1,7 @@
 [package]
 authors = ["Philipp Oppermann <dev@phil-opp.com>"]
-license = "MIT/Apache-2.0"
 description = "Tool to create a bootable OS image from a kernel binary."
+license = "MIT/Apache-2.0"
 name = "bootimage"
 version = "0.1.0"
 
@@ -10,4 +10,5 @@ byteorder = "1.2.1"
 git2 = "0.6.11"
 structopt = "0.1.6"
 structopt-derive = "0.1.6"
+toml = "0.4.5"
 xmas-elf = "0.6.1"
