@@ -25,7 +25,7 @@ struct Opt {
     #[structopt(long = "release", help = "Compile kernel in release mode")]
     release: bool,
 
-    #[structopt(short = "o", long = "output", help = "Output file", default_value = "image.bin")]
+    #[structopt(short = "o", long = "output", help = "Output file", default_value = "bootimage.bin")]
     output: String,
 
     #[structopt(long = "target", help = "Target triple")]
