@@ -3,7 +3,6 @@
 
 extern crate byteorder;
 extern crate xmas_elf;
-extern crate git2;
 extern crate lapp;
 extern crate toml;
 extern crate curl;
@@ -15,7 +14,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::convert::TryFrom;
 use byteorder::{ByteOrder, LittleEndian};
-use git2::Repository;
 use curl::easy::Easy;
 
 const ARGS: &str = "
@@ -158,7 +156,14 @@ fn build_bootloader(opt: &Opt, out_dir: &Path) -> io::Result<PathBuf> {
                 // download bootloader from github repo
                 let url = "https://github.com/phil-opp/bootloader";
                 println!("Cloning bootloader from {}", url);
-                Repository::clone(url, &bootloader_dir).expect("failed to clone bootloader");
+                let mut command = Command::new("git");
+                command.current_dir(out_dir);
+                command.arg("clone");
+                command.arg(url);
+                if !command.status()?.success() {
+                    write!(std::io::stderr(), "Error: git clone failed")?;
+                    std::process::exit(1);
+                }
             }
 
             // compile bootloader
