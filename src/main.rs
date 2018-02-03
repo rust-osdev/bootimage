@@ -193,11 +193,13 @@ fn build_bootloader(opt: &Opt, out_dir: &Path) -> io::Result<PathBuf> {
             let url = "https://github.com/phil-opp/bootloader/releases/download/latest/bootimage.bin";
             let mut handle = Easy::new();
             handle.url(url)?;
+            handle.follow_location(true)?;
             let mut transfer = handle.transfer();
             transfer.write_function(|data| {
                 bootloader.write_all(data).expect("Error writing bootloader to file");
                 Ok(data.len())
             })?;
+            transfer.perform().expect("Downloading bootloader failed");
         }
     }
     Ok(bootloader_path)
