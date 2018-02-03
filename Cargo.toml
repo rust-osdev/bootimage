@@ -7,7 +7,7 @@ version = "0.2.0-alpha-001"
 
 [dependencies]
 byteorder = "1.2.1"
-file-fetcher = "0.1.1"
+curl = "0.4.11"
 git2 = "0.6.11"
 structopt = "0.1.6"
 structopt-derive = "0.1.6"

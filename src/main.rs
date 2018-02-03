@@ -8,7 +8,7 @@ extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
 extern crate toml;
-extern crate file_fetcher;
+extern crate curl;
 
 use std::io;
 use std::io::prelude::*;
@@ -16,10 +16,10 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::convert::TryFrom;
-use std::str::FromStr;
 use byteorder::{ByteOrder, LittleEndian};
 use git2::Repository;
 use structopt::StructOpt;
+use curl::easy::Easy;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "TODO", about = "TODO")]
@@ -61,6 +61,7 @@ fn main() -> io::Result<()> {
     let mut bootloader_data = Vec::new();
     File::open(&bootloader_path)?.read_to_end(&mut bootloader_data)?;
 
+    println!("Creating disk image at {}", opt.output);
     let mut output = File::create(&opt.output)?;
     output.write_all(&bootloader_data)?;
     output.write_all(&kernel_interface_block)?;
@@ -175,10 +176,17 @@ fn build_bootloader(opt: &Opt, out_dir: &Path) -> io::Result<PathBuf> {
 
             File::create(&bootloader_path)?.write_all(bootloader_section.raw_data(&elf_file))?;
         } else {
+            println!("Downloading bootloader...");
+            let mut bootloader = File::create(&bootloader_path)?;
             // download bootloader release
             let url = "https://github.com/phil-opp/bootloader/releases/download/latest/bootimage.bin";
-            let bootloader = file_fetcher::open_bytes(FromStr::from_str(url).expect("invalid url")).expect("download failed");
-            File::create(&bootloader_path)?.write_all(&bootloader)?;
+            let mut handle = Easy::new();
+            handle.url(url)?;
+            let mut transfer = handle.transfer();
+            transfer.write_function(|data| {
+                bootloader.write_all(data).expect("Error writing bootloader to file");
+                Ok(data.len())
+            })?;
         }
     }
     Ok(bootloader_path)
