@@ -4,9 +4,7 @@
 extern crate byteorder;
 extern crate xmas_elf;
 extern crate git2;
-extern crate structopt;
-#[macro_use]
-extern crate structopt_derive;
+extern crate lapp;
 extern crate toml;
 extern crate curl;
 
@@ -18,30 +16,38 @@ use std::process::Command;
 use std::convert::TryFrom;
 use byteorder::{ByteOrder, LittleEndian};
 use git2::Repository;
-use structopt::StructOpt;
 use curl::easy::Easy;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "TODO", about = "TODO")]
+const ARGS: &str = "
+A tool for appending a x86 bootloader to a Rust kernel.
+
+    -t,--target (default '')
+    -o,--output (default 'bootimage.bin')
+    --release           Compile kernel in release mode
+    --build-bootloader  Build the bootloader instead of downloading it
+    --only-bootloader   Only build the bootloader without appending the kernel
+";
+
+#[derive(Debug)]
 struct Opt {
-    #[structopt(long = "release", help = "Compile kernel in release mode")]
     release: bool,
-
-    #[structopt(short = "o", long = "output", help = "Output file", default_value = "bootimage.bin")]
     output: String,
-
-    #[structopt(long = "target", help = "Target triple")]
     target: Option<String>,
-
-    #[structopt(long = "build-bootloader", help = "Build the bootloader instead of downloading it")]
     build_bootloader: bool,
-
-    #[structopt(long = "only-bootloader", help = "Only build the bootloader without appending the kernel")]
     only_bootloader: bool,
 }
 
 fn main() -> io::Result<()> {
-    let opt = Opt::from_args();
+    let args = lapp::parse_args(ARGS);
+    let target = args.get_string("target");
+    let target = if target == "" { None } else { Some(target) };
+    let opt = Opt {
+        release: args.get_bool("build-bootloader"),
+        output: args.get_string("output"),
+        target: target,
+        build_bootloader: args.get_bool("build-bootloader"),
+        only_bootloader: args.get_bool("only-bootloader"),
+    };
     let pwd = std::env::current_dir()?;
 
     if opt.only_bootloader {
