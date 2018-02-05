@@ -40,7 +40,7 @@ fn main() -> io::Result<()> {
     let target = args.get_string("target");
     let target = if target == "" { None } else { Some(target) };
     let opt = Opt {
-        release: args.get_bool("build-bootloader"),
+        release: args.get_bool("release"),
         output: args.get_string("output"),
         target: target,
         build_bootloader: args.get_bool("build-bootloader"),
