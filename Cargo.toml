@@ -4,6 +4,7 @@ description = "Tool to create a bootable OS image from a kernel binary."
 license = "MIT/Apache-2.0"
 name = "bootimage"
 version = "0.2.0-alpha-003"
+repository = "https://github.com/phil-opp/bootimage"
 
 [dependencies]
 byteorder = "1.2.1"
