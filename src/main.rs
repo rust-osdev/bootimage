@@ -21,6 +21,7 @@ A tool for appending a x86 bootloader to a Rust kernel.
 
     -t,--target (default '')
     -o,--output (default 'bootimage.bin')
+    -g,--git (default 'https://github.com/phil-opp/bootloader')
     --release           Compile kernel in release mode
     --build-bootloader  Build the bootloader instead of downloading it
     --only-bootloader   Only build the bootloader without appending the kernel
@@ -33,6 +34,7 @@ struct Opt {
     target: Option<String>,
     build_bootloader: bool,
     only_bootloader: bool,
+    bootloader_git: String,
 }
 
 fn main() -> io::Result<()> {
@@ -40,11 +42,12 @@ fn main() -> io::Result<()> {
     let target = args.get_string("target");
     let target = if target == "" { None } else { Some(target) };
     let opt = Opt {
-        release: args.get_bool("build-bootloader"),
+        release: args.get_bool("release"),
         output: args.get_string("output"),
         target: target,
         build_bootloader: args.get_bool("build-bootloader"),
         only_bootloader: args.get_bool("only-bootloader"),
+        bootloader_git: args.get_string("git"),
     };
     let pwd = std::env::current_dir()?;
 
@@ -154,7 +157,7 @@ fn build_bootloader(opt: &Opt, out_dir: &Path) -> io::Result<PathBuf> {
 
             if !bootloader_dir.exists() {
                 // download bootloader from github repo
-                let url = "https://github.com/phil-opp/bootloader";
+                let url = &opt.bootloader_git;
                 println!("Cloning bootloader from {}", url);
                 let mut command = Command::new("git");
                 command.current_dir(out_dir);
