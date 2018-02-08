@@ -145,7 +145,7 @@ fn build_kernel(opt: &Opt, pwd: &Path) -> io::Result<(File, PathBuf)> {
 }
 
 fn build_bootloader(opt: &Opt, out_dir: &Path) -> io::Result<PathBuf> {
-    let bootloader_target = "test";
+    let bootloader_target = "x86_64-bootloader";
 
     let mut bootloader_path = out_dir.to_path_buf();
     bootloader_path.push("bootloader.bin");
