@@ -87,6 +87,10 @@ fn main() -> io::Result<()> {
         }
     }
 
+    let padding_size = ((512 - (kernel_size % 512)) % 512) as usize;
+    let padding = [0u8; 512];
+    output.write_all(&padding[..padding_size])?;
+
     Ok(())
 }
 
