@@ -1,6 +1,6 @@
 [[package]]
 name = "bootimage"
-version = "0.2.0-alpha-005"
+version = "0.2.0-alpha-006"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "curl 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
