@@ -17,6 +17,8 @@ mod args;
 const BLOCK_SIZE: usize = 512;
 type KernelInfoBlock = [u8; BLOCK_SIZE];
 
+const COMPILE: bool = false;
+
 pub fn main() {
     if let Err(err) = run() {
         panic!("Error: {:?}", err);
@@ -140,19 +142,31 @@ fn download_bootloader(out_dir: &Path) -> Result<CrateMetadata, Error> {
         dir
     };
 
-    File::create(&cargo_toml)?.write_all(r#"
-        [package]
-        authors = ["author@example.com>"]
-        name = "bootloader_download_helper"
-        version = "0.0.0"
+    {
+        let mut cargo_toml_file = File::create(&cargo_toml)?;
+        cargo_toml_file.write_all(r#"
+            [package]
+            authors = ["author@example.com>"]
+            name = "bootloader_download_helper"
+            version = "0.0.0"
 
-        [dependencies.bootloader]
-        git = "https://github.com/rust-osdev/bootloader.git"
-    "#.as_bytes())?;
+        "#.as_bytes())?;
+        if COMPILE {
+            cargo_toml_file.write_all(r#"
+                [dependencies.bootloader]
+                git = "https://github.com/rust-osdev/bootloader.git"
+            "#.as_bytes())?;
+        } else {
+            cargo_toml_file.write_all(r#"
+                [dependencies.bootloader_precompiled]
+                version = "0.2.0-alpha"
+            "#.as_bytes())?;
+        }
 
-    File::create(src_lib)?.write_all(r#"
-        #![no_std]
-    "#.as_bytes())?;
+        File::create(src_lib)?.write_all(r#"
+            #![no_std]
+        "#.as_bytes())?;
+    }
 
     let mut command = Command::new("cargo");
     command.arg("fetch");
@@ -160,8 +174,13 @@ fn download_bootloader(out_dir: &Path) -> Result<CrateMetadata, Error> {
     assert!(command.status()?.success(), "Bootloader download failed.");
 
     let metadata = cargo_metadata::metadata_deps(Some(&cargo_toml), true)?;
-    let bootloader = metadata.packages.iter().find(|p| p.name == "bootloader")
-        .expect("Could not find crate named “bootloader”");
+    let bootloader = if COMPILE {
+        metadata.packages.iter().find(|p| p.name == "bootloader")
+            .expect("Could not find crate named “bootloader”")
+    } else {
+        metadata.packages.iter().find(|p| p.name == "bootloader_precompiled")
+            .expect("Could not find crate named “bootloader_precompiled”")
+    };
 
     Ok(bootloader.clone())
 }
@@ -173,23 +192,29 @@ fn build_bootloader(out_dir: &Path) -> Result<Box<[u8]>, Error> {
     let bootloader_dir = Path::new(&bootloader_metadata.manifest_path).parent().unwrap();
 
     let bootloader_target = "x86_64-bootloader";
-    let mut bootloader_path = bootloader_dir.to_path_buf();
-    bootloader_path.push("bootloader.bin");
 
-    let args = &[
-        String::from("--target"),
-        String::from(bootloader_target),
-        String::from("--release"),
-    ];
+    let bootloader_elf_path = if COMPILE {
+        let args = &[
+            String::from("--target"),
+            String::from(bootloader_target),
+            String::from("--release"),
+        ];
 
-    println!("Building bootloader");
-    let exit_status = run_xargo_build(bootloader_dir, args)?;
-    if !exit_status.success() { std::process::exit(1) }
+        println!("Building bootloader");
+        let exit_status = run_xargo_build(bootloader_dir, args)?;
+        if !exit_status.success() { std::process::exit(1) }
 
-    let mut bootloader_elf_path = bootloader_dir.to_path_buf();
-    bootloader_elf_path.push("target");
-    bootloader_elf_path.push(bootloader_target);
-    bootloader_elf_path.push("release/bootloader");
+        let mut bootloader_elf_path = bootloader_dir.to_path_buf();
+        bootloader_elf_path.push("target");
+        bootloader_elf_path.push(bootloader_target);
+        bootloader_elf_path.push("release");
+        bootloader_elf_path.push("bootloader");
+        bootloader_elf_path
+    } else {
+        let mut bootloader_elf_path = bootloader_dir.to_path_buf();
+        bootloader_elf_path.push("bootloader");
+        bootloader_elf_path
+    };
 
     let mut bootloader_elf_bytes = Vec::new();
     let mut bootloader = File::open(&bootloader_elf_path).map_err(|err| {
