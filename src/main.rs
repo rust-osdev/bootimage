@@ -1,142 +1,91 @@
-#![feature(termination_trait)]
-#![feature(try_from)]
-
 extern crate byteorder;
 extern crate xmas_elf;
-extern crate lapp;
 extern crate toml;
-extern crate curl;
+extern crate cargo_metadata;
 
 use std::io;
-use std::io::prelude::*;
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::convert::TryFrom;
 use byteorder::{ByteOrder, LittleEndian};
-use curl::easy::Easy;
+use args::Args;
+use cargo_metadata::Metadata as CargoMetadata;
+use cargo_metadata::Package as CrateMetadata;
 
-const ARGS: &str = "
-A tool for appending a x86 bootloader to a Rust kernel.
+mod args;
 
-    -t,--target (default '')
-    -o,--output (default 'bootimage.bin')
-    -g,--git (default 'https://github.com/phil-opp/bootloader')
-    --release           Compile kernel in release mode
-    --build-bootloader  Build the bootloader instead of downloading it
-    --only-bootloader   Only build the bootloader without appending the kernel
-";
+const BLOCK_SIZE: usize = 512;
+type KernelInfoBlock = [u8; BLOCK_SIZE];
 
-#[derive(Debug)]
-struct Opt {
-    release: bool,
-    output: String,
-    target: Option<String>,
-    build_bootloader: bool,
-    only_bootloader: bool,
-    bootloader_git: String,
+pub fn main() {
+    if let Err(err) = run() {
+        panic!("Error: {:?}", err);
+    }
 }
 
-fn main() -> io::Result<()> {
-    let args = lapp::parse_args(ARGS);
-    let target = args.get_string("target");
-    let target = if target == "" { None } else { Some(target) };
-    let opt = Opt {
-        release: args.get_bool("release"),
-        output: args.get_string("output"),
-        target: target,
-        build_bootloader: args.get_bool("build-bootloader"),
-        only_bootloader: args.get_bool("only-bootloader"),
-        bootloader_git: args.get_string("git"),
-    };
-    let pwd = std::env::current_dir()?;
+#[derive(Debug)]
+enum Error {
+    Io(io::Error),
+    CargoMetadata(cargo_metadata::Error),
+    Bootloader(String, io::Error),
+}
 
-    if opt.only_bootloader {
-        build_bootloader(&opt, &pwd)?;
-        return Ok(());
+impl From<io::Error> for Error {
+    fn from(other: io::Error) -> Self {
+        Error::Io(other)
     }
+}
 
-    let (mut kernel, out_dir) = build_kernel(&opt, &pwd)?;
+impl From<cargo_metadata::Error> for Error {
+    fn from(other: cargo_metadata::Error) -> Self {
+        Error::CargoMetadata(other)
+    }
+}
+
+fn run() -> Result<(), Error> {
+    let args = args::args();
+
+    let metadata = read_cargo_metadata(&args)?;
+
+    let (kernel, out_dir) = build_kernel(&args, &metadata)?;
 
     let kernel_size = kernel.metadata()?.len();
-    let kernel_size = u32::try_from(kernel_size).expect("kernel too big");
-    let mut kernel_interface_block = [0u8; 512];
-    LittleEndian::write_u32(&mut kernel_interface_block[0..4], kernel_size);
+    let kernel_info_block = create_kernel_info_block(kernel_size);
 
-    let bootloader_path = build_bootloader(&opt, &out_dir)?;
+    let bootloader = build_bootloader(&out_dir)?;
 
-    let mut bootloader_data = Vec::new();
-    File::open(&bootloader_path)?.read_to_end(&mut bootloader_data)?;
-
-    println!("Creating disk image at {}", opt.output);
-    let mut output = File::create(&opt.output)?;
-    output.write_all(&bootloader_data)?;
-    output.write_all(&kernel_interface_block)?;
-
-    // write out kernel elf file
-    let mut buffer = [0u8; 1024];
-    loop {
-        let (n, interrupted) = match kernel.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(n) => (n, false),
-            Err(ref e) if e.kind() == io::ErrorKind::Interrupted => (0, true),
-            Err(e) => return Err(e),
-        };
-        if !interrupted {
-            output.write_all(&buffer[..n])?
-        }
-    }
-
-    let padding_size = ((512 - (kernel_size % 512)) % 512) as usize;
-    let padding = [0u8; 512];
-    output.write_all(&padding[..padding_size])?;
+    create_disk_image(&args, kernel, kernel_info_block, &bootloader)?;
 
     Ok(())
 }
 
-fn build_kernel(opt: &Opt, pwd: &Path) -> io::Result<(File, PathBuf)> {
-    let mut crate_root = pwd.to_path_buf();
-    // try to find Cargo.toml to find root dir and read crate name
-    let crate_name = loop {
-        let mut cargo_toml_path = crate_root.clone();
-        cargo_toml_path.push("Cargo.toml");
-        match File::open(cargo_toml_path) {
-            Err(ref e) if e.kind() == io::ErrorKind::NotFound => {
-                if !crate_root.pop() {
-                    panic!("Cargo.toml not found");
-                }
-            }
-            Err(e) => return Err(e),
-            Ok(mut file) => {
-                // Cargo.toml found! pwd is already the root path, so we just need
-                // to set the crate name
-                let mut content = String::new();
-                file.read_to_string(&mut content)?;
-                let toml = content.parse::<toml::Value>().ok();
-                if let Some(toml) = toml {
-                    if let Some(crate_name) = toml.get("package")
-                        .and_then(|package| package.get("name")).and_then(|n| n.as_str())
-                    {
-                        break String::from(crate_name);
-                    }
-                }
-                panic!("Cargo.toml invalid");
-            }
-        }
-    };
+fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, cargo_metadata::Error> {
+    cargo_metadata::metadata(args.manifest_path.as_ref().map(PathBuf::as_path))
+}
 
-    let kernel_target = opt.target.as_ref().map(String::as_str);
+fn build_kernel(args: &args::Args, metadata: &CargoMetadata) -> Result<(File, PathBuf), Error> {
+    let crate_root = PathBuf::from(&metadata.workspace_root);
+    let manifest_path = args.manifest_path.as_ref().map(Clone::clone).unwrap_or({
+        let mut path = crate_root.clone();
+        path.push("Cargo.toml");
+        path
+    });
+    let crate_ = metadata.packages.iter().find(|p| Path::new(&p.manifest_path) == manifest_path)
+        .expect("Could not read crate name from cargo metadata");
+    let crate_name = &crate_.name;
+
+    let target_dir = PathBuf::from(&metadata.target_directory);
 
     // compile kernel
-    let exit_status = run_xargo_build(&pwd, kernel_target, opt.release)?;
+    println!("Building kernel");
+    let exit_status = run_xargo_build(&std::env::current_dir()?, &args.all_cargo)?;
     if !exit_status.success() { std::process::exit(1) }
 
-    let mut out_dir = pwd.to_path_buf();
-    out_dir.push("target");
-    if let Some(target) = kernel_target {
+    let mut out_dir = target_dir;
+    if let &Some(ref target) = &args.target {
         out_dir.push(target);
     }
-    if opt.release {
+    if args.release {
         out_dir.push("release");
     } else {
         out_dir.push("debug");
@@ -148,79 +97,143 @@ fn build_kernel(opt: &Opt, pwd: &Path) -> io::Result<(File, PathBuf)> {
     Ok((kernel, out_dir))
 }
 
-fn build_bootloader(opt: &Opt, out_dir: &Path) -> io::Result<PathBuf> {
-    let bootloader_target = "x86_64-bootloader";
-
-    let mut bootloader_path = out_dir.to_path_buf();
-    bootloader_path.push("bootloader.bin");
-
-    if !bootloader_path.exists() {
-        if opt.build_bootloader {
-            let mut bootloader_dir = out_dir.to_path_buf();
-            bootloader_dir.push("bootloader");
-
-            if !bootloader_dir.exists() {
-                // download bootloader from github repo
-                let url = &opt.bootloader_git;
-                println!("Cloning bootloader from {}", url);
-                let mut command = Command::new("git");
-                command.current_dir(out_dir);
-                command.arg("clone");
-                command.arg(url);
-                if !command.status()?.success() {
-                    write!(std::io::stderr(), "Error: git clone failed")?;
-                    std::process::exit(1);
-                }
-            }
-
-            // compile bootloader
-            println!("Compiling bootloader...");
-            let exit_status = run_xargo_build(&bootloader_dir, Some(bootloader_target), true)?;
-            if !exit_status.success() { std::process::exit(1) }
-
-            let mut bootloader_elf_path = bootloader_dir.to_path_buf();
-            bootloader_elf_path.push("target");
-            bootloader_elf_path.push(bootloader_target);
-            bootloader_elf_path.push("release/bootloader");
-
-            let mut bootloader_elf_bytes = Vec::new();
-            File::open(bootloader_elf_path)?.read_to_end(&mut bootloader_elf_bytes)?;
-
-            // copy bootloader section of ELF file to bootloader_path
-            let elf_file = xmas_elf::ElfFile::new(&bootloader_elf_bytes).unwrap();
-            xmas_elf::header::sanity_check(&elf_file).unwrap();
-            let bootloader_section = elf_file.find_section_by_name(".bootloader")
-                .expect("bootloader must have a .bootloader section");
-
-            File::create(&bootloader_path)?.write_all(bootloader_section.raw_data(&elf_file))?;
-        } else {
-            println!("Downloading bootloader...");
-            let mut bootloader = File::create(&bootloader_path)?;
-            // download bootloader release
-            let url = "https://github.com/phil-opp/bootloader/releases/download/latest/bootimage.bin";
-            let mut handle = Easy::new();
-            handle.url(url)?;
-            handle.follow_location(true)?;
-            let mut transfer = handle.transfer();
-            transfer.write_function(|data| {
-                bootloader.write_all(data).expect("Error writing bootloader to file");
-                Ok(data.len())
-            })?;
-            transfer.perform().expect("Downloading bootloader failed");
-        }
-    }
-    Ok(bootloader_path)
+fn run_xargo_build(pwd: &Path, args: &[String]) -> io::Result<std::process::ExitStatus> {
+    let mut command = Command::new("xargo");
+    command.arg("build");
+    command.current_dir(pwd).env("RUST_TARGET_PATH", pwd);
+    command.args(args);
+    command.status()
 }
 
-fn run_xargo_build(pwd: &Path, target: Option<&str>, release: bool) -> io::Result<std::process::ExitStatus> {
-    let mut command = Command::new("xargo");
-    command.current_dir(pwd).env("RUST_TARGET_PATH", pwd);
-    command.arg("build");
-    if let Some(target) = target {
-        command.arg("--target").arg(target);
+fn create_kernel_info_block(kernel_size: u64) -> KernelInfoBlock {
+    let kernel_size = if kernel_size <= u64::from(u32::max_value()) {
+        kernel_size as u32
+    } else {
+        panic!("Kernel can't be loaded by BIOS bootloader because is too big")
+    };
+
+    let mut kernel_info_block = [0u8; BLOCK_SIZE];
+    LittleEndian::write_u32(&mut kernel_info_block[0..4], kernel_size);
+
+    kernel_info_block
+}
+
+fn download_bootloader(out_dir: &Path) -> Result<CrateMetadata, Error> {
+    use std::io::Write;
+
+    let bootloader_dir = {
+        let mut dir = PathBuf::from(out_dir);
+        dir.push("bootloader");
+        dir
+    };
+
+    let cargo_toml = {
+        let mut dir = bootloader_dir.clone();
+        dir.push("Cargo.toml");
+        dir
+    };
+    let src_lib = {
+        let mut dir = bootloader_dir.clone();
+        dir.push("src");
+        fs::create_dir_all(dir.as_path())?;
+        dir.push("lib.rs");
+        dir
+    };
+
+    File::create(&cargo_toml)?.write_all(r#"
+        [package]
+        authors = ["author@example.com>"]
+        name = "bootloader_download_helper"
+        version = "0.0.0"
+
+        [dependencies.bootloader]
+        git = "https://github.com/rust-osdev/bootloader.git"
+    "#.as_bytes())?;
+
+    File::create(src_lib)?.write_all(r#"
+        #![no_std]
+    "#.as_bytes())?;
+
+    let mut command = Command::new("cargo");
+    command.arg("fetch");
+    command.current_dir(bootloader_dir);
+    assert!(command.status()?.success(), "Bootloader download failed.");
+
+    let metadata = cargo_metadata::metadata_deps(Some(&cargo_toml), true)?;
+    let bootloader = metadata.packages.iter().find(|p| p.name == "bootloader")
+        .expect("Could not find crate named “bootloader”");
+
+    Ok(bootloader.clone())
+}
+
+fn build_bootloader(out_dir: &Path) -> Result<Box<[u8]>, Error> {
+    use std::io::Read;
+
+    let bootloader_metadata = download_bootloader(out_dir)?;
+    let bootloader_dir = Path::new(&bootloader_metadata.manifest_path).parent().unwrap();
+
+    let bootloader_target = "x86_64-bootloader";
+    let mut bootloader_path = bootloader_dir.to_path_buf();
+    bootloader_path.push("bootloader.bin");
+
+    let args = &[
+        String::from("--target"),
+        String::from(bootloader_target),
+        String::from("--release"),
+    ];
+
+    println!("Building bootloader");
+    let exit_status = run_xargo_build(bootloader_dir, args)?;
+    if !exit_status.success() { std::process::exit(1) }
+
+    let mut bootloader_elf_path = bootloader_dir.to_path_buf();
+    bootloader_elf_path.push("target");
+    bootloader_elf_path.push(bootloader_target);
+    bootloader_elf_path.push("release/bootloader");
+
+    let mut bootloader_elf_bytes = Vec::new();
+    let mut bootloader = File::open(&bootloader_elf_path).map_err(|err| {
+        Error::Bootloader(format!("Could not open bootloader at {:?}", bootloader_elf_path), err)
+    })?;
+    bootloader.read_to_end(&mut bootloader_elf_bytes)?;
+
+    // copy bootloader section of ELF file to bootloader_path
+    let elf_file = xmas_elf::ElfFile::new(&bootloader_elf_bytes).unwrap();
+    xmas_elf::header::sanity_check(&elf_file).unwrap();
+    let bootloader_section = elf_file.find_section_by_name(".bootloader")
+        .expect("bootloader must have a .bootloader section");
+
+    Ok(Vec::from(bootloader_section.raw_data(&elf_file)).into_boxed_slice())
+}
+
+fn create_disk_image(args: &Args, mut kernel: File, kernel_info_block: KernelInfoBlock,
+    bootloader_data: &[u8]) -> Result<(), Error>
+{
+    use std::io::{Read, Write};
+
+    println!("Creating disk image at {:?}", args.output);
+    let mut output = File::create(&args.output)?;
+    output.write_all(&bootloader_data)?;
+    output.write_all(&kernel_info_block)?;
+
+    // write out kernel elf file
+    let kernel_size = kernel.metadata()?.len();
+    let mut buffer = [0u8; 1024];
+    loop {
+        let (n, interrupted) = match kernel.read(&mut buffer) {
+            Ok(0) => break,
+            Ok(n) => (n, false),
+            Err(ref e) if e.kind() == io::ErrorKind::Interrupted => (0, true),
+            Err(e) => Err(e)?,
+        };
+        if !interrupted {
+            output.write_all(&buffer[..n])?
+        }
     }
-    if release {
-        command.arg("--release");
-    }
-    command.status()
+
+    let padding_size = ((512 - (kernel_size % 512)) % 512) as usize;
+    let padding = [0u8; 512];
+    output.write_all(&padding[..padding_size])?;
+
+    Ok(())
 }
