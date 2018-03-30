@@ -6,7 +6,7 @@ extern crate cargo_metadata;
 use std::io;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{self, Command};
 use byteorder::{ByteOrder, LittleEndian};
 use args::Args;
 use config::Config;
@@ -20,8 +20,10 @@ const BLOCK_SIZE: usize = 512;
 type KernelInfoBlock = [u8; BLOCK_SIZE];
 
 pub fn main() {
+    use std::io::Write;
     if let Err(err) = run() {
-        panic!("Error: {:?}", err);
+        writeln!(io::stderr(), "Error: {:?}", err).unwrap();
+        process::exit(1);
     }
 }
 
@@ -234,7 +236,8 @@ fn build_bootloader(out_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error>
 
     let mut bootloader_elf_bytes = Vec::new();
     let mut bootloader = File::open(&bootloader_elf_path).map_err(|err| {
-        Error::Bootloader(format!("Could not open bootloader at {:?}", bootloader_elf_path), err)
+        Error::Bootloader(format!("Could not open bootloader at {}",
+            bootloader_elf_path.display()), err)
     })?;
     bootloader.read_to_end(&mut bootloader_elf_bytes)?;
 
@@ -252,7 +255,7 @@ fn create_disk_image(args: &Args, mut kernel: File, kernel_info_block: KernelInf
 {
     use std::io::{Read, Write};
 
-    println!("Creating disk image at {:?}", args.output);
+    println!("Creating disk image at {}", args.output.display());
     let mut output = File::create(&args.output)?;
     output.write_all(&bootloader_data)?;
     output.write_all(&kernel_info_block)?;
