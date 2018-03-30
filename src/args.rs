@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 const DEFAULT_OUTPUT: &str = "bootimage.bin";
 
-pub fn args() -> Args {
+pub fn parse_args() -> Args {
     let mut args: Vec<_> = env::args().skip(1).collect();
 
     let mut manifest_path: Option<PathBuf> = None;
@@ -57,12 +57,33 @@ pub struct Args {
     /// All arguments that are passed to cargo.
     pub all_cargo: Vec<String>,
     /// The manifest path (also present in `all_cargo`).
-    pub manifest_path: Option<PathBuf>,
+    manifest_path: Option<PathBuf>,
     /// The target triple (also present in `all_cargo`).
-    pub target: Option<String>,
+    target: Option<String>,
     /// The release flag (also present in `all_cargo`).
-    pub release: bool,
+    release: bool,
     /// The output file name (not passed to cargo)
     pub output: PathBuf,
 }
 
+impl Args {
+    pub fn manifest_path(&self) -> &Option<PathBuf> {
+        &self.manifest_path
+    }
+
+    pub fn target(&self) -> &Option<String> {
+        &self.target
+    }
+
+    pub fn release(&self) -> bool {
+        self.release
+    }
+
+
+    pub fn set_target(&mut self, target: String) {
+        assert!(self.target.is_none());
+        self.target = Some(target.clone());
+        self.all_cargo.push("--target".into());
+        self.all_cargo.push(target);
+    }
+}
