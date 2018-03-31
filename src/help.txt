@@ -1,0 +1,32 @@
+Creates a bootable disk image from a Rust kernel
+
+USAGE:
+    bootimage [OPTIONS]                 Display help and version information
+    bootimage build [BUILD_OPTIONS]     Create a bootable disk image (see below)
+
+OPTIONS:
+    -h, --help  Prints help information and exit
+    ---version  Prints version information and exit
+
+BUILD_OPTIONS:
+    Any options are directly passed to `cargo build` (see `cargo build --help`
+    for possible options). After building, a bootloader is downloaded and
+    built, and then combined with the kernel into a bootable disk image.
+
+CONFIGURATION:
+    The bootloader and the behavior of `bootimage build` can be configured
+    through a `[package.metadata.bootimage]` table in the `Cargo.toml`. The
+    following options are available:
+
+    [package.metadata.bootimage]
+    default-target = ""         This target is used if no `--target` is passed
+    output = "bootimage.bin"    The output file name
+
+    [package.metadata.bootimage.bootloader]
+    name = "bootloader"             The bootloader crate name
+    version = ""                    The bootloader version that should be used
+    git = ""                        Use the bootloader from this git repository
+    branch = ""                     The git branch to use (defaults to master)
+    path = ""                       Use the bootloader from this local path
+    precompiled = false             Whether the bootloader crate is precompiled
+    target = "x86_64-bootloader"    Target triple for compiling the bootloader

@@ -3,12 +3,11 @@ authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 description = "Tool to create a bootable OS image from a kernel binary."
 license = "MIT/Apache-2.0"
 name = "bootimage"
-version = "0.2.0-alpha-006"
+version = "0.2.0"
 repository = "https://github.com/phil-opp/bootimage"
 
 [dependencies]
 byteorder = "1.2.1"
-curl = "0.4.11"
-lapp = "0.3.1"
 toml = "0.4.5"
 xmas-elf = "0.6.1"
+cargo_metadata = "0.5.3"
