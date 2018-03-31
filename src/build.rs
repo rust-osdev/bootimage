@@ -137,6 +137,11 @@ fn download_bootloader(out_dir: &Path, config: &Config) -> Result<CrateMetadata,
                     git = "{}"
             "#, git).as_bytes())?;
         }
+        if let &Some(ref branch) = &config.bootloader.branch {
+            cargo_toml_file.write_all(format!(r#"
+                    branch = "{}"
+            "#, branch).as_bytes())?;
+        }
         if let &Some(ref path) = &config.bootloader.path {
             cargo_toml_file.write_all(format!(r#"
                     path = "{}"

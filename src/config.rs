@@ -15,6 +15,7 @@ pub struct BootloaderConfig {
     pub target: String,
     pub version: Option<String>,
     pub git: Option<String>,
+    pub branch: Option<String>,
     pub path: Option<PathBuf>,
 }
 
@@ -60,6 +61,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         },
                         ("version", Value::String(s)) => bootloader_config.version = From::from(s),
                         ("git", Value::String(s)) => bootloader_config.git = From::from(s),
+                        ("branch", Value::String(s)) => bootloader_config.branch = From::from(s),
                         ("path", Value::String(s)) => {
                             bootloader_config.path = Some(Path::new(&s).canonicalize()?);
                         }
@@ -95,6 +97,7 @@ struct BootloaderConfigBuilder {
     precompiled: Option<bool>,
     target: Option<String>,
     version: Option<String>,
+    branch: Option<String>,
     git: Option<String>,
     path: Option<PathBuf>,
 }
@@ -124,6 +127,7 @@ impl Into<BootloaderConfig> for BootloaderConfigBuilder {
             target: self.target.unwrap_or("x86_64-bootloader".into()),
             version: self.version,
             git: self.git,
+            branch: self.branch,
             path: self.path,
         }
     }

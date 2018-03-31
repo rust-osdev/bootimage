@@ -31,6 +31,7 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     name = "bootloader"             # The bootloader crate name
     version = ""                    # The bootloader version that should be used
     git = ""                        # Use the bootloader from this git repository
+    branch = ""                     # The git branch to use (defaults to master)
     path = ""                       # Use the bootloader from this local path
     precompiled = false             # Whether the bootloader crate is precompiled
     target = "x86_64-bootloader"    # Target triple for compiling the bootloader
