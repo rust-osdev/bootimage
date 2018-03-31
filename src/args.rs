@@ -1,9 +1,19 @@
 use std::{env, mem};
 use std::path::PathBuf;
+use Command;
 
-pub fn parse_args() -> Args {
-    let mut args: Vec<_> = env::args().skip(1).collect();
+pub(crate) fn parse_args() -> Command {
+    let mut args = env::args().skip(1).peekable();
 
+    match args.peek().map(|s| s.as_str()) {
+        Some("build") => parse_build_args(args.skip(1).collect()),
+        Some("--help") | Some("-h") => Command::Help(true),
+        Some("--version") => Command::Version,
+        _ => Command::Help(false),
+    }
+}
+
+fn parse_build_args(mut args: Vec<String>) -> Command {
     let mut manifest_path: Option<PathBuf> = None;
     let mut target: Option<String> = None;
     let mut release: Option<bool> = None;
@@ -16,6 +26,12 @@ pub fn parse_args() -> Args {
         let mut arg_iter = args.iter_mut();
         while let Some(arg) = arg_iter.next() {
             match arg.as_ref() {
+                "--help" | "-h" => {
+                    return Command::Help(true);
+                }
+                "--version" => {
+                    return Command::Version;
+                }
                 "--target" => {
                     set(&mut target, arg_iter.next().map(|s| s.clone()));
                 }
@@ -35,12 +51,12 @@ pub fn parse_args() -> Args {
         }
     }
 
-    Args {
+    Command::Build(Args {
         all_cargo: args,
         target,
         manifest_path,
         release: release.unwrap_or(false),
-    }
+    })
 }
 
 pub struct Args {
