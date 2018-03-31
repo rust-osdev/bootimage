@@ -5,6 +5,7 @@ use toml::Value;
 pub struct Config {
     pub manifest_path: PathBuf,
     pub default_target: Option<String>,
+    pub output: PathBuf,
     pub bootloader: BootloaderConfig,
 }
 
@@ -48,6 +49,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
     for (key, value) in metadata {
         match (key.as_str(), value.clone()) {
             ("default-target", Value::String(s)) => config.default_target = From::from(s),
+            ("output", Value::String(s)) => config.output = Some(PathBuf::from(s)),
             ("bootloader", Value::Table(t)) => {
                 let mut bootloader_config = BootloaderConfigBuilder::default();
                 for (key, value) in t {
@@ -83,6 +85,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
 struct ConfigBuilder {
     manifest_path: Option<PathBuf>,
     default_target: Option<String>,
+    output: Option<PathBuf>,
     bootloader: Option<BootloaderConfigBuilder>,
 }
 
@@ -105,6 +108,7 @@ impl Into<Config> for ConfigBuilder {
         Config {
             manifest_path: self.manifest_path.expect("manifest path must be set"),
             default_target: self.default_target,
+            output: self.output.unwrap_or(PathBuf::from("bootimage.bin")),
             bootloader: self.bootloader.unwrap_or(default_bootloader_config).into(),
         }
     }

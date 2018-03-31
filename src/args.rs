@@ -1,15 +1,12 @@
 use std::{env, mem};
 use std::path::PathBuf;
 
-const DEFAULT_OUTPUT: &str = "bootimage.bin";
-
 pub fn parse_args() -> Args {
     let mut args: Vec<_> = env::args().skip(1).collect();
 
     let mut manifest_path: Option<PathBuf> = None;
     let mut target: Option<String> = None;
     let mut release: Option<bool> = None;
-    let mut output: Option<PathBuf> = None;
     {
         fn set<T>(arg: &mut Option<T>, value: Option<T>) {
             let previous = mem::replace(arg, value);
@@ -33,12 +30,6 @@ pub fn parse_args() -> Args {
                     set(&mut manifest_path, Some(path));
                 }
                 "--release" => set(&mut release, Some(true)),
-                "--output" => {
-                    // remove from arg list
-                    mem::replace(arg, String::new());
-                    let value = arg_iter.next().map(|val| mem::replace(val, String::new()));
-                    set(&mut output, value.map(PathBuf::from));
-                },
                 _ => {},
             }
         }
@@ -49,7 +40,6 @@ pub fn parse_args() -> Args {
         target,
         manifest_path,
         release: release.unwrap_or(false),
-        output: output.unwrap_or(PathBuf::from(DEFAULT_OUTPUT)),
     }
 }
 
@@ -62,8 +52,6 @@ pub struct Args {
     target: Option<String>,
     /// The release flag (also present in `all_cargo`).
     release: bool,
-    /// The output file name (not passed to cargo)
-    pub output: PathBuf,
 }
 
 impl Args {

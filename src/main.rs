@@ -78,7 +78,7 @@ fn run() -> Result<(), Error> {
 
     let bootloader = build_bootloader(&out_dir, &config)?;
 
-    create_disk_image(&args, kernel, kernel_info_block, &bootloader)?;
+    create_disk_image(&config, kernel, kernel_info_block, &bootloader)?;
 
     Ok(())
 }
@@ -250,13 +250,13 @@ fn build_bootloader(out_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error>
     Ok(Vec::from(bootloader_section.raw_data(&elf_file)).into_boxed_slice())
 }
 
-fn create_disk_image(args: &Args, mut kernel: File, kernel_info_block: KernelInfoBlock,
+fn create_disk_image(config: &Config, mut kernel: File, kernel_info_block: KernelInfoBlock,
     bootloader_data: &[u8]) -> Result<(), Error>
 {
     use std::io::{Read, Write};
 
-    println!("Creating disk image at {}", args.output.display());
-    let mut output = File::create(&args.output)?;
+    println!("Creating disk image at {}", config.output.display());
+    let mut output = File::create(&config.output)?;
     output.write_all(&bootloader_data)?;
     output.write_all(&kernel_info_block)?;
 
