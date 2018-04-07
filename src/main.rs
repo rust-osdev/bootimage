@@ -12,8 +12,9 @@ mod build;
 mod help;
 
 enum Command {
+    NoSubcommand,
     Build(Args),
-    Help(bool),
+    Help,
     Version,
 }
 
@@ -55,8 +56,9 @@ impl From<cargo_metadata::Error> for Error {
 fn run() -> Result<(), Error> {
     let command = args::parse_args();
     match command {
+        Command::NoSubcommand => help::no_subcommand(),
         Command::Build(args) => build::build(args),
-        Command::Help(explicitly_invoked) => help::help(explicitly_invoked),
+        Command::Help => Ok(help::help()),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
     }
 

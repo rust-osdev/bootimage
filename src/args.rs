@@ -7,9 +7,9 @@ pub(crate) fn parse_args() -> Command {
 
     match args.peek().map(|s| s.as_str()) {
         Some("build") => parse_build_args(args.skip(1).collect()),
-        Some("--help") | Some("-h") => Command::Help(true),
+        Some("--help") | Some("-h") => Command::Help,
         Some("--version") => Command::Version,
-        _ => Command::Help(false),
+        _ => Command::NoSubcommand,
     }
 }
 
@@ -27,7 +27,7 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
         while let Some(arg) = arg_iter.next() {
             match arg.as_ref() {
                 "--help" | "-h" => {
-                    return Command::Help(true);
+                    return Command::Help;
                 }
                 "--version" => {
                     return Command::Version;
