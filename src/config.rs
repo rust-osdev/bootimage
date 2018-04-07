@@ -7,6 +7,7 @@ pub struct Config {
     pub default_target: Option<String>,
     pub output: PathBuf,
     pub bootloader: BootloaderConfig,
+    pub minimum_image_size: Option<u64>,
 }
 
 pub struct BootloaderConfig {
@@ -74,6 +75,14 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 }
                 config.bootloader = Some(bootloader_config);
             }
+            ("minimum-image-size", Value::Integer(x)) => {
+                if x >= 0 {
+                    config.minimum_image_size = Some((x * 1024 * 1024) as u64); // MiB -> Byte
+                } else {
+                    Err(Error::Config(format!("unexpected `package.metadata.bootimage` \
+                                       key `minimum-image-size` with negative value `{}`", value)))?
+                }
+            }
             (key, value) => {
                 Err(Error::Config(format!("unexpected `package.metadata.bootimage` \
                     key `{}` with value `{}`", key, value)))?
@@ -89,6 +98,7 @@ struct ConfigBuilder {
     default_target: Option<String>,
     output: Option<PathBuf>,
     bootloader: Option<BootloaderConfigBuilder>,
+    minimum_image_size: Option<u64>,
 }
 
 #[derive(Default)]
@@ -113,6 +123,7 @@ impl Into<Config> for ConfigBuilder {
             default_target: self.default_target,
             output: self.output.unwrap_or(PathBuf::from("bootimage.bin")),
             bootloader: self.bootloader.unwrap_or(default_bootloader_config).into(),
+            minimum_image_size: self.minimum_image_size
         }
     }
 }

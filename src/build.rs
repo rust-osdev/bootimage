@@ -240,5 +240,13 @@ fn create_disk_image(config: &Config, mut kernel: File, kernel_info_block: Kerne
     let padding = [0u8; 512];
     output.write_all(&padding[..padding_size])?;
 
+    if let Some(min_size) = config.minimum_image_size {
+        // we already wrote to output successfully,
+        // both metadata and set_len should succeed.
+        if output.metadata()?.len() < min_size {
+            output.set_len(min_size)?;
+        }
+    }
+
     Ok(())
 }
