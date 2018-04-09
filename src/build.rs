@@ -72,10 +72,10 @@ fn build_kernel(args: &args::Args, config: &Config, metadata: &CargoMetadata) ->
     Ok((kernel, out_dir))
 }
 
-fn run_xargo_build(pwd: &Path, args: &[String]) -> io::Result<process::ExitStatus> {
+fn run_xargo_build(target_path: &Path, args: &[String]) -> io::Result<process::ExitStatus> {
     let mut command = process::Command::new("xargo");
     command.arg("build");
-    command.current_dir(pwd).env("RUST_TARGET_PATH", pwd);
+    command.env("RUST_TARGET_PATH", target_path);
     command.args(args);
     command.status()
 }
@@ -174,6 +174,8 @@ fn build_bootloader(out_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error>
 
     let bootloader_elf_path = if !config.bootloader.precompiled {
         let args = &[
+            String::from("--manifest-path"),
+            bootloader_metadata.manifest_path.clone(),
             String::from("--target"),
             config.bootloader.target.clone(),
             String::from("--release"),
