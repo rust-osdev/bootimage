@@ -1,0 +1,21 @@
+Creates a bootable disk image from a Rust kernel
+
+USAGE:
+    bootimage run [BUILD_OPTS] -- [RUN_OPTS]        Build and run a disk image
+
+    (for other forms of usage see `bootimage --help`)
+    (for BUILD_OPTS see `bootimage build --help`)
+
+RUN_OPTS:
+    Any options are directly passed to the run command. Note that the run
+    options must be separated from the build options by a "--".
+
+CONFIGURATION:
+    The behavior of `bootimage run` can be configured through a
+    `[package.metadata.bootimage]` table in the `Cargo.toml`. The
+    following options are available to configure run behavior:
+
+    [package.metadata.bootimage]
+    # The command invoked on `bootimage run`
+    # (the "{}" will be replaced with the path to the bootable disk image)
+    run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]

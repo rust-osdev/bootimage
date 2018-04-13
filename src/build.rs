@@ -11,7 +11,20 @@ use xmas_elf;
 const BLOCK_SIZE: usize = 512;
 type KernelInfoBlock = [u8; BLOCK_SIZE];
 
-pub(crate) fn build(mut args: Args) -> Result<(), Error> {
+pub(crate) fn build(args: Args) -> Result<(), Error> {
+    let (args, config, metadata, out_dir) = common_setup(args)?;
+
+    build_impl(&args, &config, &metadata, &out_dir)
+}
+
+pub(crate) fn run(args: Args) -> Result<(), Error> {
+    let (args, config, metadata, out_dir) = common_setup(args)?;
+
+    build_impl(&args, &config, &metadata, &out_dir)?;
+    run_impl(&args, &config)
+}
+
+fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf), Error> {
     fn out_dir(args: &Args, metadata: &CargoMetadata) -> PathBuf {
         let target_dir = PathBuf::from(&metadata.target_directory);
         let mut out_dir = target_dir;
@@ -43,13 +56,22 @@ pub(crate) fn build(mut args: Args) -> Result<(), Error> {
 
     let out_dir = out_dir(&args, &metadata);
 
+    Ok((args, config, metadata, out_dir))
+}
+
+fn build_impl(
+    args: &Args,
+    config: &Config,
+    metadata: &CargoMetadata,
+    out_dir: &Path,
+) -> Result<(), Error> {
     let kernel = build_kernel(&out_dir, &args, &config, &metadata)?;
 
     let kernel_size = kernel.metadata()?.len();
     let kernel_info_block = create_kernel_info_block(kernel_size);
 
     if args.update_bootloader() {
-        let mut bootloader_cargo_lock = out_dir.clone();
+        let mut bootloader_cargo_lock = PathBuf::from(out_dir);
         bootloader_cargo_lock.push("bootloader");
         bootloader_cargo_lock.push("Cargo.lock");
 
@@ -60,6 +82,25 @@ pub(crate) fn build(mut args: Args) -> Result<(), Error> {
 
     create_disk_image(&config, kernel, kernel_info_block, &bootloader)?;
 
+    Ok(())
+}
+
+fn run_impl(args: &Args, config: &Config) -> Result<(), Error> {
+    let command = &config.run_command[0];
+    let mut command = process::Command::new(command);
+    for arg in &config.run_command[1..] {
+        command.arg(
+            arg.replace(
+                "{}",
+                config
+                    .output
+                    .to_str()
+                    .expect("output must be valid unicode"),
+            ),
+        );
+    }
+    command.args(&args.run_args);
+    command.status()?;
     Ok(())
 }
 
@@ -82,7 +123,7 @@ fn build_kernel(
 
     // compile kernel
     println!("Building kernel");
-    let exit_status = run_xargo_build(&env::current_dir()?, &args.all_cargo)?;
+    let exit_status = run_xargo_build(&env::current_dir()?, &args.cargo_args)?;
     if !exit_status.success() {
         process::exit(1)
     }

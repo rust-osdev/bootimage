@@ -14,8 +14,10 @@ mod help;
 enum Command {
     NoSubcommand,
     Build(Args),
+    Run(Args),
     Help,
     BuildHelp,
+    RunHelp,
     Version,
 }
 
@@ -59,8 +61,10 @@ fn run() -> Result<(), Error> {
     match command {
         Command::NoSubcommand => help::no_subcommand(),
         Command::Build(args) => build::build(args),
+        Command::Run(args) => build::run(args),
         Command::Help => Ok(help::help()),
         Command::BuildHelp => Ok(help::build_help()),
+        Command::RunHelp => Ok(help::run_help()),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
     }
 }

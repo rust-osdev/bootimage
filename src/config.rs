@@ -8,6 +8,7 @@ pub struct Config {
     pub output: PathBuf,
     pub bootloader: BootloaderConfig,
     pub minimum_image_size: Option<u64>,
+    pub run_command: Vec<String>,
 }
 
 pub struct BootloaderConfig {
@@ -89,6 +90,18 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                     )))?
                 }
             }
+            ("run-command", Value::Array(array)) => {
+                let mut command = Vec::new();
+                for value in array {
+                    match value {
+                        Value::String(s) => command.push(s),
+                        _ => Err(Error::Config(format!(
+                            "run-command must be a list of strings"
+                        )))?,
+                    }
+                }
+                config.run_command = Some(command);
+            }
             (key, value) => Err(Error::Config(format!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
@@ -106,6 +119,7 @@ struct ConfigBuilder {
     output: Option<PathBuf>,
     bootloader: Option<BootloaderConfigBuilder>,
     minimum_image_size: Option<u64>,
+    run_command: Option<Vec<String>>,
 }
 
 #[derive(Default)]
@@ -131,6 +145,11 @@ impl Into<Config> for ConfigBuilder {
             output: self.output.unwrap_or(PathBuf::from("bootimage.bin")),
             bootloader: self.bootloader.unwrap_or(default_bootloader_config).into(),
             minimum_image_size: self.minimum_image_size,
+            run_command: self.run_command.unwrap_or(vec![
+                "qemu-system-x86_64".into(),
+                "-drive".into(),
+                "format=raw,file={}".into(),
+            ]),
         }
     }
 }

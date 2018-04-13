@@ -1,11 +1,11 @@
 Creates a bootable disk image from a Rust kernel
 
 USAGE:
-    bootimage build [BUILD_OPTIONS]     Create a bootable disk image (see below)
+    bootimage build [BUILD_OPTS]        Create a bootable disk image
 
     (for other forms of usage see `bootimage --help`)
 
-BUILD_OPTIONS:
+BUILD_OPTS:
     --update-bootloader     Update the bootloader dependency.
 
     Any additional options are directly passed to `cargo build` (see
@@ -16,7 +16,7 @@ BUILD_OPTIONS:
 CONFIGURATION:
     The bootloader and the behavior of `bootimage build` can be configured
     through a `[package.metadata.bootimage]` table in the `Cargo.toml`. The
-    following options are available:
+    following options are available to configure the build:
 
     [package.metadata.bootimage]
     default-target = ""         This target is used if no `--target` is passed

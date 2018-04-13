@@ -27,6 +27,9 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     default-target = ""         # This target is used if no `--target` is passed
     output = "bootimage.bin"    # The output file name
     minimum-image-size = 0      # The minimum output file size (in MiB)
+    # The command invoked on `bootimage run`
+    # (the "{}" will be replaced with the path to the bootable disk image)
+    run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
 
     [package.metadata.bootimage.bootloader]
     name = "bootloader"             # The bootloader crate name
