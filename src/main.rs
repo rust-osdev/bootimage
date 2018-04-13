@@ -15,6 +15,7 @@ enum Command {
     NoSubcommand,
     Build(Args),
     Help,
+    BuildHelp,
     Version,
 }
 
@@ -59,6 +60,7 @@ fn run() -> Result<(), Error> {
         Command::NoSubcommand => help::no_subcommand(),
         Command::Build(args) => build::build(args),
         Command::Help => Ok(help::help()),
+        Command::BuildHelp => Ok(help::build_help()),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
     }
 

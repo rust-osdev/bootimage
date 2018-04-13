@@ -28,7 +28,7 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
         while let Some(arg) = arg_iter.next() {
             match arg.as_ref() {
                 "--help" | "-h" => {
-                    return Command::Help;
+                    return Command::BuildHelp;
                 }
                 "--version" => {
                     return Command::Version;

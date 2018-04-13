@@ -1,17 +1,17 @@
 Creates a bootable disk image from a Rust kernel
 
 USAGE:
-    bootimage [OPTIONS]                 Display help and version information
     bootimage build [BUILD_OPTIONS]     Create a bootable disk image (see below)
 
-OPTIONS:
-    -h, --help  Prints help information and exit
-    ---version  Prints version information and exit
+    (for other forms of usage see `bootimage --help`)
 
 BUILD_OPTIONS:
-    Any options are directly passed to `cargo build` (see `cargo build --help`
-    for possible options). After building, a bootloader is downloaded and
-    built, and then combined with the kernel into a bootable disk image.
+    --update-bootloader     Update the bootloader dependency.
+
+    Any additional options are directly passed to `cargo build` (see
+    `cargo build --help` for possible options). After building, a bootloader
+    is downloaded and built, and then combined with the kernel into a bootable
+    disk image.
 
 CONFIGURATION:
     The bootloader and the behavior of `bootimage build` can be configured
