@@ -12,6 +12,20 @@ const BLOCK_SIZE: usize = 512;
 type KernelInfoBlock = [u8; BLOCK_SIZE];
 
 pub(crate) fn build(mut args: Args) -> Result<(), Error> {
+    fn out_dir(args: &Args, metadata: &CargoMetadata) -> PathBuf {
+        let target_dir = PathBuf::from(&metadata.target_directory);
+        let mut out_dir = target_dir;
+        if let &Some(ref target) = args.target() {
+            out_dir.push(target);
+        }
+        if args.release() {
+            out_dir.push("release");
+        } else {
+            out_dir.push("debug");
+        }
+        out_dir
+    }
+
     let metadata = read_cargo_metadata(&args)?;
     let crate_root = PathBuf::from(&metadata.workspace_root);
     let manifest_path = args.manifest_path().as_ref().map(Clone::clone).unwrap_or({
@@ -27,10 +41,20 @@ pub(crate) fn build(mut args: Args) -> Result<(), Error> {
         }
     }
 
-    let (kernel, out_dir) = build_kernel(&args, &config, &metadata)?;
+    let out_dir = out_dir(&args, &metadata);
+
+    let kernel = build_kernel(&out_dir, &args, &config, &metadata)?;
 
     let kernel_size = kernel.metadata()?.len();
     let kernel_info_block = create_kernel_info_block(kernel_size);
+
+    if args.update_bootloader() {
+        let mut bootloader_cargo_lock = out_dir.clone();
+        bootloader_cargo_lock.push("bootloader");
+        bootloader_cargo_lock.push("Cargo.lock");
+
+        fs::remove_file(bootloader_cargo_lock)?;
+    }
 
     let bootloader = build_bootloader(&out_dir, &config)?;
 
@@ -43,33 +67,21 @@ fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, cargo_metadata::Err
     cargo_metadata::metadata(args.manifest_path().as_ref().map(PathBuf::as_path))
 }
 
-fn build_kernel(args: &args::Args, config: &Config, metadata: &CargoMetadata) -> Result<(File, PathBuf), Error> {
+fn build_kernel(out_dir: &Path, args: &args::Args, config: &Config, metadata: &CargoMetadata) -> Result<File, Error> {
     let crate_ = metadata.packages.iter()
         .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
         .expect("Could not read crate name from cargo metadata");
     let crate_name = &crate_.name;
-
-    let target_dir = PathBuf::from(&metadata.target_directory);
 
     // compile kernel
     println!("Building kernel");
     let exit_status = run_xargo_build(&env::current_dir()?, &args.all_cargo)?;
     if !exit_status.success() { process::exit(1) }
 
-    let mut out_dir = target_dir;
-    if let &Some(ref target) = args.target() {
-        out_dir.push(target);
-    }
-    if args.release() {
-        out_dir.push("release");
-    } else {
-        out_dir.push("debug");
-    }
-
-    let mut kernel_path = out_dir.clone();
+    let mut kernel_path = out_dir.to_owned();
     kernel_path.push(crate_name);
     let kernel = File::open(kernel_path)?;
-    Ok((kernel, out_dir))
+    Ok(kernel)
 }
 
 fn run_xargo_build(target_path: &Path, args: &[String]) -> io::Result<process::ExitStatus> {

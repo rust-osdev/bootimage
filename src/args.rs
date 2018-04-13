@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use Command;
 
 pub(crate) fn parse_args() -> Command {
-    let mut args = env::args().skip(1).peekable();
-
-    match args.peek().map(|s| s.as_str()) {
-        Some("build") => parse_build_args(args.skip(1).collect()),
+    let mut args = env::args().skip(1);
+    let first = args.next();
+    match first.as_ref().map(|s| s.as_str()) {
+        Some("build") => parse_build_args(args.collect()),
         Some("--help") | Some("-h") => Command::Help,
         Some("--version") => Command::Version,
         _ => Command::NoSubcommand,
@@ -17,6 +17,7 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
     let mut manifest_path: Option<PathBuf> = None;
     let mut target: Option<String> = None;
     let mut release: Option<bool> = None;
+    let mut update_bootloader: Option<bool> = None;
     {
         fn set<T>(arg: &mut Option<T>, value: Option<T>) {
             let previous = mem::replace(arg, value);
@@ -46,6 +47,10 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
                     set(&mut manifest_path, Some(path));
                 }
                 "--release" => set(&mut release, Some(true)),
+                "--update-bootloader" => {
+                    set(&mut update_bootloader, Some(true));
+                    mem::replace(arg, String::new()); // don't pass to cargo
+                },
                 _ => {},
             }
         }
@@ -56,6 +61,7 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
         target,
         manifest_path,
         release: release.unwrap_or(false),
+        update_bootloader: update_bootloader.unwrap_or(false),
     })
 }
 
@@ -68,6 +74,8 @@ pub struct Args {
     target: Option<String>,
     /// The release flag (also present in `all_cargo`).
     release: bool,
+    /// Whether the bootloader should be updated (not present in `all_cargo`).
+    update_bootloader: bool,
 }
 
 impl Args {
@@ -83,6 +91,9 @@ impl Args {
         self.release
     }
 
+    pub fn update_bootloader(&self) -> bool {
+        self.update_bootloader
+    }
 
     pub fn set_target(&mut self, target: String) {
         assert!(self.target.is_none());
