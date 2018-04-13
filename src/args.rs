@@ -6,18 +6,19 @@ pub(crate) fn parse_args() -> Command {
     let mut args = env::args().skip(1);
     let first = args.next();
     match first.as_ref().map(|s| s.as_str()) {
-        Some("build") => parse_build_args(args.collect()),
+        Some("build") => parse_build_args(args),
         Some("--help") | Some("-h") => Command::Help,
         Some("--version") => Command::Version,
         _ => Command::NoSubcommand,
     }
 }
 
-fn parse_build_args(mut args: Vec<String>) -> Command {
+fn parse_build_args<A>(args: A) -> Command where A: Iterator<Item=String>{
     let mut manifest_path: Option<PathBuf> = None;
     let mut target: Option<String> = None;
     let mut release: Option<bool> = None;
     let mut update_bootloader: Option<bool> = None;
+    let mut cargo_args = Vec::new();
     {
         fn set<T>(arg: &mut Option<T>, value: Option<T>) {
             let previous = mem::replace(arg, value);
@@ -27,7 +28,7 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
             )
         };
 
-        let mut arg_iter = args.iter_mut();
+        let mut arg_iter = args.into_iter();
         while let Some(arg) = arg_iter.next() {
             match arg.as_ref() {
                 "--help" | "-h" => {
@@ -37,36 +38,52 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
                     return Command::Version;
                 }
                 "--target" => {
-                    set(&mut target, arg_iter.next().map(|s| s.clone()));
+                    let next = arg_iter.next();
+                    set(&mut target, next.clone());
+                    cargo_args.push(arg);
+                    if let Some(next) = next {
+                        cargo_args.push(next);
+                    }
                 }
                 _ if arg.starts_with("--target=") => {
                     set(
                         &mut target,
                         Some(String::from(arg.trim_left_matches("--target="))),
                     );
+                    cargo_args.push(arg);
                 }
                 "--manifest-path" => {
+                    let next = arg_iter.next();
                     set(
                         &mut manifest_path,
-                        arg_iter.next().map(|p| PathBuf::from(&p)),
+                        next.as_ref().map(|p| PathBuf::from(&p)),
                     );
+                    cargo_args.push(arg);
+                    if let Some(next) = next {
+                        cargo_args.push(next);
+                    }
                 }
                 _ if arg.starts_with("--manifest-path=") => {
                     let path = PathBuf::from(arg.trim_left_matches("--manifest-path="));
                     set(&mut manifest_path, Some(path));
+                    cargo_args.push(arg);
                 }
-                "--release" => set(&mut release, Some(true)),
+                "--release" => {
+                    set(&mut release, Some(true));
+                    cargo_args.push(arg);
+                },
                 "--update-bootloader" => {
                     set(&mut update_bootloader, Some(true));
-                    mem::replace(arg, String::new()); // don't pass to cargo
                 }
-                _ => {}
-            }
+                _ => {
+                    cargo_args.push(arg);
+                }
+            };
         }
     }
 
     Command::Build(Args {
-        all_cargo: args,
+        all_cargo: cargo_args,
         target,
         manifest_path,
         release: release.unwrap_or(false),
