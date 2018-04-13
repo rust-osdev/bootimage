@@ -26,6 +26,7 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     [package.metadata.bootimage]
     default-target = ""         # This target is used if no `--target` is passed
     output = "bootimage.bin"    # The output file name
+    minimum-image-size = 0      # The minimum output file size (in MiB)
 
     [package.metadata.bootimage.bootloader]
     name = "bootloader"             # The bootloader crate name
