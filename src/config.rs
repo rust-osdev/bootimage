@@ -28,19 +28,21 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
         content.parse()?
     };
 
-    let metadata = cargo_toml.get("package")
+    let metadata = cargo_toml
+        .get("package")
         .and_then(|table| table.get("metadata"))
         .and_then(|table| table.get("bootimage"));
     let metadata = match metadata {
         None => {
             return Ok(ConfigBuilder {
-               manifest_path: Some(manifest_path),
-               ..Default::default()
+                manifest_path: Some(manifest_path),
+                ..Default::default()
             }.into())
         }
-        Some(metadata) => metadata.as_table().ok_or(Error::Config(
-            format!("Bootimage configuration invalid: {:?}", metadata)
-        ))?,
+        Some(metadata) => metadata.as_table().ok_or(Error::Config(format!(
+            "Bootimage configuration invalid: {:?}",
+            metadata
+        )))?,
     };
 
     let mut config = ConfigBuilder {
@@ -59,7 +61,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         ("name", Value::String(s)) => bootloader_config.name = From::from(s),
                         ("precompiled", Value::Boolean(b)) => {
                             bootloader_config.precompiled = From::from(b)
-                        },
+                        }
                         ("target", Value::String(s)) => bootloader_config.target = From::from(s),
                         ("version", Value::String(s)) => bootloader_config.version = From::from(s),
                         ("git", Value::String(s)) => bootloader_config.git = From::from(s),
@@ -67,11 +69,11 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         ("path", Value::String(s)) => {
                             bootloader_config.path = Some(Path::new(&s).canonicalize()?);
                         }
-                        (key, value) => {
-                            Err(Error::Config(format!("unexpected \
-                                `package.metadata.bootimage.bootloader` key `{}` with value `{}`",
-                                key, value)))?
-                        }
+                        (key, value) => Err(Error::Config(format!(
+                            "unexpected \
+                             `package.metadata.bootimage.bootloader` key `{}` with value `{}`",
+                            key, value
+                        )))?,
                     }
                 }
                 config.bootloader = Some(bootloader_config);
@@ -80,14 +82,18 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 if x >= 0 {
                     config.minimum_image_size = Some((x * 1024 * 1024) as u64); // MiB -> Byte
                 } else {
-                    Err(Error::Config(format!("unexpected `package.metadata.bootimage` \
-                                       key `minimum-image-size` with negative value `{}`", value)))?
+                    Err(Error::Config(format!(
+                        "unexpected `package.metadata.bootimage` \
+                         key `minimum-image-size` with negative value `{}`",
+                        value
+                    )))?
                 }
             }
-            (key, value) => {
-                Err(Error::Config(format!("unexpected `package.metadata.bootimage` \
-                    key `{}` with value `{}`", key, value)))?
-            }
+            (key, value) => Err(Error::Config(format!(
+                "unexpected `package.metadata.bootimage` \
+                 key `{}` with value `{}`",
+                key, value
+            )))?,
         }
     }
     Ok(config.into())
@@ -124,7 +130,7 @@ impl Into<Config> for ConfigBuilder {
             default_target: self.default_target,
             output: self.output.unwrap_or(PathBuf::from("bootimage.bin")),
             bootloader: self.bootloader.unwrap_or(default_bootloader_config).into(),
-            minimum_image_size: self.minimum_image_size
+            minimum_image_size: self.minimum_image_size,
         }
     }
 }
@@ -132,7 +138,11 @@ impl Into<Config> for ConfigBuilder {
 impl Into<BootloaderConfig> for BootloaderConfigBuilder {
     fn into(self) -> BootloaderConfig {
         let precompiled = self.precompiled.unwrap_or(false);
-        let default_name = if precompiled { "bootloader_precompiled" } else { "bootloader" };
+        let default_name = if precompiled {
+            "bootloader_precompiled"
+        } else {
+            "bootloader"
+        };
         BootloaderConfig {
             name: self.name.unwrap_or(default_name.into()),
             precompiled,

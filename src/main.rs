@@ -1,7 +1,7 @@
 extern crate byteorder;
-extern crate xmas_elf;
-extern crate toml;
 extern crate cargo_metadata;
+extern crate toml;
+extern crate xmas_elf;
 
 use std::{io, process};
 use args::Args;
@@ -63,5 +63,4 @@ fn run() -> Result<(), Error> {
         Command::BuildHelp => Ok(help::build_help()),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
     }
-
 }

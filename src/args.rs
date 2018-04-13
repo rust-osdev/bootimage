@@ -21,7 +21,10 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
     {
         fn set<T>(arg: &mut Option<T>, value: Option<T>) {
             let previous = mem::replace(arg, value);
-            assert!(previous.is_none(), "multiple arguments of same type provided")
+            assert!(
+                previous.is_none(),
+                "multiple arguments of same type provided"
+            )
         };
 
         let mut arg_iter = args.iter_mut();
@@ -37,10 +40,16 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
                     set(&mut target, arg_iter.next().map(|s| s.clone()));
                 }
                 _ if arg.starts_with("--target=") => {
-                    set(&mut target, Some(String::from(arg.trim_left_matches("--target="))));
+                    set(
+                        &mut target,
+                        Some(String::from(arg.trim_left_matches("--target="))),
+                    );
                 }
                 "--manifest-path" => {
-                    set(&mut manifest_path, arg_iter.next().map(|p| PathBuf::from(&p)));
+                    set(
+                        &mut manifest_path,
+                        arg_iter.next().map(|p| PathBuf::from(&p)),
+                    );
                 }
                 _ if arg.starts_with("--manifest-path=") => {
                     let path = PathBuf::from(arg.trim_left_matches("--manifest-path="));
@@ -50,8 +59,8 @@ fn parse_build_args(mut args: Vec<String>) -> Command {
                 "--update-bootloader" => {
                     set(&mut update_bootloader, Some(true));
                     mem::replace(arg, String::new()); // don't pass to cargo
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }

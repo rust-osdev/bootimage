@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::{env, process, io};
+use std::{env, io, process};
 use std::path::{Path, PathBuf};
 use byteorder::{ByteOrder, LittleEndian};
 use args::{self, Args};
@@ -67,8 +67,15 @@ fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, cargo_metadata::Err
     cargo_metadata::metadata(args.manifest_path().as_ref().map(PathBuf::as_path))
 }
 
-fn build_kernel(out_dir: &Path, args: &args::Args, config: &Config, metadata: &CargoMetadata) -> Result<File, Error> {
-    let crate_ = metadata.packages.iter()
+fn build_kernel(
+    out_dir: &Path,
+    args: &args::Args,
+    config: &Config,
+    metadata: &CargoMetadata,
+) -> Result<File, Error> {
+    let crate_ = metadata
+        .packages
+        .iter()
         .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
         .expect("Could not read crate name from cargo metadata");
     let crate_name = &crate_.name;
@@ -76,7 +83,9 @@ fn build_kernel(out_dir: &Path, args: &args::Args, config: &Config, metadata: &C
     // compile kernel
     println!("Building kernel");
     let exit_status = run_xargo_build(&env::current_dir()?, &args.all_cargo)?;
-    if !exit_status.success() { process::exit(1) }
+    if !exit_status.success() {
+        process::exit(1)
+    }
 
     let mut kernel_path = out_dir.to_owned();
     kernel_path.push(crate_name);
@@ -129,40 +138,69 @@ fn download_bootloader(out_dir: &Path, config: &Config) -> Result<CrateMetadata,
 
     {
         let mut cargo_toml_file = File::create(&cargo_toml)?;
-        cargo_toml_file.write_all(r#"
+        cargo_toml_file.write_all(
+            r#"
             [package]
             authors = ["author@example.com>"]
             name = "bootloader_download_helper"
             version = "0.0.0"
 
-        "#.as_bytes())?;
-        cargo_toml_file.write_all(format!(r#"
+        "#.as_bytes(),
+        )?;
+        cargo_toml_file.write_all(
+            format!(
+                r#"
             [dependencies.{}]
-        "#, config.bootloader.name).as_bytes())?;
+        "#,
+                config.bootloader.name
+            ).as_bytes(),
+        )?;
         if let &Some(ref version) = &config.bootloader.version {
-            cargo_toml_file.write_all(format!(r#"
+            cargo_toml_file.write_all(
+                format!(
+                    r#"
                     version = "{}"
-            "#, version).as_bytes())?;
+            "#,
+                    version
+                ).as_bytes(),
+            )?;
         }
         if let &Some(ref git) = &config.bootloader.git {
-            cargo_toml_file.write_all(format!(r#"
+            cargo_toml_file.write_all(
+                format!(
+                    r#"
                     git = "{}"
-            "#, git).as_bytes())?;
+            "#,
+                    git
+                ).as_bytes(),
+            )?;
         }
         if let &Some(ref branch) = &config.bootloader.branch {
-            cargo_toml_file.write_all(format!(r#"
+            cargo_toml_file.write_all(
+                format!(
+                    r#"
                     branch = "{}"
-            "#, branch).as_bytes())?;
+            "#,
+                    branch
+                ).as_bytes(),
+            )?;
         }
         if let &Some(ref path) = &config.bootloader.path {
-            cargo_toml_file.write_all(format!(r#"
+            cargo_toml_file.write_all(
+                format!(
+                    r#"
                     path = "{}"
-            "#, path.display()).as_bytes())?;
+            "#,
+                    path.display()
+                ).as_bytes(),
+            )?;
         }
 
-        File::create(src_lib)?.write_all(r#"
+        File::create(src_lib)?.write_all(
+            r#"
             #![no_std]
-        "#.as_bytes())?;
+        "#.as_bytes(),
+        )?;
     }
 
     let mut command = process::Command::new("cargo");
@@ -171,8 +209,14 @@ fn download_bootloader(out_dir: &Path, config: &Config) -> Result<CrateMetadata,
     assert!(command.status()?.success(), "Bootloader download failed.");
 
     let metadata = cargo_metadata::metadata_deps(Some(&cargo_toml), true)?;
-    let bootloader = metadata.packages.iter().find(|p| p.name == config.bootloader.name)
-            .expect(&format!("Could not find crate named “{}”", config.bootloader.name));
+    let bootloader = metadata
+        .packages
+        .iter()
+        .find(|p| p.name == config.bootloader.name)
+        .expect(&format!(
+            "Could not find crate named “{}”",
+            config.bootloader.name
+        ));
 
     Ok(bootloader.clone())
 }
@@ -181,8 +225,9 @@ fn build_bootloader(out_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error>
     use std::io::Read;
 
     let bootloader_metadata = download_bootloader(out_dir, config)?;
-    let bootloader_dir = Path::new(&bootloader_metadata.manifest_path).parent().unwrap();
-
+    let bootloader_dir = Path::new(&bootloader_metadata.manifest_path)
+        .parent()
+        .unwrap();
 
     let bootloader_elf_path = if !config.bootloader.precompiled {
         let args = &[
@@ -195,7 +240,9 @@ fn build_bootloader(out_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error>
 
         println!("Building bootloader");
         let exit_status = run_xargo_build(bootloader_dir, args)?;
-        if !exit_status.success() { process::exit(1) }
+        if !exit_status.success() {
+            process::exit(1)
+        }
 
         let mut bootloader_elf_path = bootloader_dir.to_path_buf();
         bootloader_elf_path.push("target");
@@ -211,23 +258,32 @@ fn build_bootloader(out_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error>
 
     let mut bootloader_elf_bytes = Vec::new();
     let mut bootloader = File::open(&bootloader_elf_path).map_err(|err| {
-        Error::Bootloader(format!("Could not open bootloader at {}",
-            bootloader_elf_path.display()), err)
+        Error::Bootloader(
+            format!(
+                "Could not open bootloader at {}",
+                bootloader_elf_path.display()
+            ),
+            err,
+        )
     })?;
     bootloader.read_to_end(&mut bootloader_elf_bytes)?;
 
     // copy bootloader section of ELF file to bootloader_path
     let elf_file = xmas_elf::ElfFile::new(&bootloader_elf_bytes).unwrap();
     xmas_elf::header::sanity_check(&elf_file).unwrap();
-    let bootloader_section = elf_file.find_section_by_name(".bootloader")
+    let bootloader_section = elf_file
+        .find_section_by_name(".bootloader")
         .expect("bootloader must have a .bootloader section");
 
     Ok(Vec::from(bootloader_section.raw_data(&elf_file)).into_boxed_slice())
 }
 
-fn create_disk_image(config: &Config, mut kernel: File, kernel_info_block: KernelInfoBlock,
-    bootloader_data: &[u8]) -> Result<(), Error>
-{
+fn create_disk_image(
+    config: &Config,
+    mut kernel: File,
+    kernel_info_block: KernelInfoBlock,
+    bootloader_data: &[u8],
+) -> Result<(), Error> {
     use std::io::{Read, Write};
 
     println!("Creating disk image at {}", config.output.display());
