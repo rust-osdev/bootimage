@@ -60,6 +60,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         ("precompiled", Value::Boolean(b)) => {
                             bootloader_config.precompiled = From::from(b)
                         },
+                        ("target", Value::String(s)) => bootloader_config.target = From::from(s),
                         ("version", Value::String(s)) => bootloader_config.version = From::from(s),
                         ("git", Value::String(s)) => bootloader_config.git = From::from(s),
                         ("branch", Value::String(s)) => bootloader_config.branch = From::from(s),
