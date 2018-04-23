@@ -1,5 +1,6 @@
 extern crate byteorder;
 extern crate cargo_metadata;
+extern crate tempdir;
 extern crate toml;
 extern crate xmas_elf;
 

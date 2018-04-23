@@ -7,6 +7,7 @@ use config::{self, Config};
 use cargo_metadata::{self, Metadata as CargoMetadata, Package as CrateMetadata};
 use Error;
 use xmas_elf;
+use tempdir::TempDir;
 
 const BLOCK_SIZE: usize = 512;
 type KernelInfoBlock = [u8; BLOCK_SIZE];
@@ -78,7 +79,9 @@ fn build_impl(
         fs::remove_file(bootloader_cargo_lock)?;
     }
 
-    let bootloader = build_bootloader(&out_dir, &config)?;
+    let tmp_dir = TempDir::new("bootloader")?;
+    let bootloader = build_bootloader(tmp_dir.path(), &config)?;
+    tmp_dir.close()?;
 
     create_disk_image(&config, kernel, kernel_info_block, &bootloader)?;
 
@@ -155,22 +158,16 @@ fn create_kernel_info_block(kernel_size: u64) -> KernelInfoBlock {
     kernel_info_block
 }
 
-fn download_bootloader(out_dir: &Path, config: &Config) -> Result<CrateMetadata, Error> {
+fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMetadata, Error> {
     use std::io::Write;
 
-    let bootloader_dir = {
-        let mut dir = PathBuf::from(out_dir);
-        dir.push("bootloader");
-        dir
-    };
-
     let cargo_toml = {
-        let mut dir = bootloader_dir.clone();
+        let mut dir = bootloader_dir.to_owned();
         dir.push("Cargo.toml");
         dir
     };
     let src_lib = {
-        let mut dir = bootloader_dir.clone();
+        let mut dir = bootloader_dir.to_owned();
         dir.push("src");
         fs::create_dir_all(dir.as_path())?;
         dir.push("lib.rs");
@@ -262,10 +259,10 @@ fn download_bootloader(out_dir: &Path, config: &Config) -> Result<CrateMetadata,
     Ok(bootloader.clone())
 }
 
-fn build_bootloader(out_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error> {
+fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>, Error> {
     use std::io::Read;
 
-    let bootloader_metadata = download_bootloader(out_dir, config)?;
+    let bootloader_metadata = download_bootloader(bootloader_dir, config)?;
     let bootloader_dir = Path::new(&bootloader_metadata.manifest_path)
         .parent()
         .unwrap();
