@@ -30,7 +30,7 @@ fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf)
         let target_dir = PathBuf::from(&metadata.target_directory);
         let mut out_dir = target_dir;
         if let &Some(ref target) = args.target() {
-            out_dir.push(target);
+            out_dir.push(Path::new(target).file_stem().unwrap().to_str().unwrap());
         }
         if args.release() {
             out_dir.push("release");
