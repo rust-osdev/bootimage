@@ -60,9 +60,11 @@ fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf)
             use std::io::{self, Write};
             use std::process;
 
-            writeln!(io::stderr(),
+            writeln!(
+                io::stderr(),
                 "Please pass a path to `--target` (with `.json` extension`): `--target {}.json`",
-                target).unwrap();
+                target
+            ).unwrap();
             process::exit(1);
         }
     }

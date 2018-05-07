@@ -63,7 +63,9 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         ("precompiled", Value::Boolean(b)) => {
                             bootloader_config.precompiled = From::from(b)
                         }
-                        ("target", Value::String(s)) => bootloader_config.target = Some(PathBuf::from(s)),
+                        ("target", Value::String(s)) => {
+                            bootloader_config.target = Some(PathBuf::from(s))
+                        }
                         ("version", Value::String(s)) => bootloader_config.version = From::from(s),
                         ("git", Value::String(s)) => bootloader_config.git = From::from(s),
                         ("branch", Value::String(s)) => bootloader_config.branch = From::from(s),
@@ -165,7 +167,8 @@ impl Into<BootloaderConfig> for BootloaderConfigBuilder {
         BootloaderConfig {
             name: self.name.unwrap_or(default_name.into()),
             precompiled,
-            target: self.target.unwrap_or(PathBuf::from("x86_64-bootloader.json")),
+            target: self.target
+                .unwrap_or(PathBuf::from("x86_64-bootloader.json")),
             version: self.version,
             git: self.git,
             branch: self.branch,
