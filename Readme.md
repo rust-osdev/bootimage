@@ -32,13 +32,13 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
 
     [package.metadata.bootimage.bootloader]
-    name = "bootloader"             # The bootloader crate name
-    version = ""                    # The bootloader version that should be used
-    git = ""                        # Use the bootloader from this git repository
-    branch = ""                     # The git branch to use (defaults to master)
-    path = ""                       # Use the bootloader from this local path
-    precompiled = false             # Whether the bootloader crate is precompiled
-    target = "x86_64-bootloader"    # Target triple for compiling the bootloader
+    name = "bootloader"                 # The bootloader crate name
+    version = ""                        # The bootloader version that should be used
+    git = ""                            # Use the bootloader from this git repository
+    branch = ""                         # The git branch to use (defaults to master)
+    path = ""                           # Use the bootloader from this local path
+    precompiled = false                 # Whether the bootloader crate is precompiled
+    target = "x86_64-bootloader.json"   # Target triple for compiling the bootloader
 ```
 
 If no `[package.metadata.bootimage.bootloader]` sub-table is specified, it defaults to:

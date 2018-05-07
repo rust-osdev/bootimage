@@ -266,12 +266,15 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
         .parent()
         .unwrap();
 
+    let mut bootloader_target_path = PathBuf::from(bootloader_dir);
+    bootloader_target_path.push(&config.bootloader.target);
+
     let bootloader_elf_path = if !config.bootloader.precompiled {
         let args = &[
             String::from("--manifest-path"),
             bootloader_metadata.manifest_path.clone(),
             String::from("--target"),
-            config.bootloader.target.clone(),
+            bootloader_target_path.display().to_string(),
             String::from("--release"),
         ];
 
@@ -283,7 +286,7 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
 
         let mut bootloader_elf_path = bootloader_dir.to_path_buf();
         bootloader_elf_path.push("target");
-        bootloader_elf_path.push(&config.bootloader.target);
+        bootloader_elf_path.push(config.bootloader.target.file_stem().unwrap());
         bootloader_elf_path.push("release");
         bootloader_elf_path.push("bootloader");
         bootloader_elf_path
