@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::{env, io, process};
+use std::{io, process};
 use std::path::{Path, PathBuf};
 use byteorder::{ByteOrder, LittleEndian};
 use args::{self, Args};
@@ -126,7 +126,7 @@ fn build_kernel(
 
     // compile kernel
     println!("Building kernel");
-    let exit_status = run_xargo_build(&env::current_dir()?, &args.cargo_args)?;
+    let exit_status = run_xbuild(&args.cargo_args)?;
     if !exit_status.success() {
         process::exit(1)
     }
@@ -137,10 +137,9 @@ fn build_kernel(
     Ok(kernel)
 }
 
-fn run_xargo_build(target_path: &Path, args: &[String]) -> io::Result<process::ExitStatus> {
-    let mut command = process::Command::new("xargo");
-    command.arg("build");
-    command.env("RUST_TARGET_PATH", target_path);
+fn run_xbuild(args: &[String]) -> io::Result<process::ExitStatus> {
+    let mut command = process::Command::new("cargo");
+    command.arg("xbuild");
     command.args(args);
     command.status()
 }
@@ -277,7 +276,7 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
         ];
 
         println!("Building bootloader");
-        let exit_status = run_xargo_build(bootloader_dir, args)?;
+        let exit_status = run_xbuild(args)?;
         if !exit_status.success() {
             process::exit(1)
         }

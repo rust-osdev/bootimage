@@ -16,7 +16,7 @@ To build the kernel project and create a bootable disk image from it, run:
 > bootimage build --target your_custom_target [other_args]
 ```
 
-The command will invoke `xargo build`, forwarding all specified options. Then it will download and build a bootloader, by default the [rust-osdev/bootloader](https://github.com/rust-osdev/bootloader). Finally, it combines the kernel and the bootloader into a bootable disk image.
+The command will invoke [`cargo xbuild`](https://github.com/rust-osdev/cargo-xbuild), forwarding all passed options. Then it will download and build a bootloader, by default the [rust-osdev/bootloader](https://github.com/rust-osdev/bootloader). Finally, it combines the kernel and the bootloader into a bootable disk image.
 
 ## Configuration
 
