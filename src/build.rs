@@ -55,6 +55,18 @@ fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf)
         }
     }
 
+    if let &Some(ref target) = args.target() {
+        if !target.ends_with(".json") {
+            use std::io::{self, Write};
+            use std::process;
+
+            writeln!(io::stderr(),
+                "Please pass a path to `--target` (with `.json` extension`): `--target {}.json`",
+                target).unwrap();
+            process::exit(1);
+        }
+    }
+
     let out_dir = out_dir(&args, &metadata);
 
     Ok((args, config, metadata, out_dir))
