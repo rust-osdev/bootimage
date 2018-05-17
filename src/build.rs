@@ -13,20 +13,20 @@ const BLOCK_SIZE: usize = 512;
 type KernelInfoBlock = [u8; BLOCK_SIZE];
 
 pub(crate) fn build(args: Args) -> Result<(), Error> {
-    let (args, config, metadata, out_dir) = common_setup(args)?;
+    let (args, config, metadata, root_dir, out_dir) = common_setup(args)?;
 
-    build_impl(&args, &config, &metadata, &out_dir)?;
+    build_impl(&args, &config, &metadata, &root_dir, &out_dir)?;
     Ok(())
 }
 
 pub(crate) fn run(args: Args) -> Result<(), Error> {
-    let (args, config, metadata, out_dir) = common_setup(args)?;
+    let (args, config, metadata, root_dir, out_dir) = common_setup(args)?;
 
-    let output_path = build_impl(&args, &config, &metadata, &out_dir)?;
+    let output_path = build_impl(&args, &config, &metadata, &root_dir, &out_dir)?;
     run_impl(&args, &config, &output_path)
 }
 
-fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf), Error> {
+fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf, PathBuf), Error> {
     fn out_dir(args: &Args, metadata: &CargoMetadata) -> PathBuf {
         let target_dir = PathBuf::from(&metadata.target_directory);
         let mut out_dir = target_dir;
@@ -72,13 +72,14 @@ fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf)
 
     let out_dir = out_dir(&args, &metadata);
 
-    Ok((args, config, metadata, out_dir))
+    Ok((args, config, metadata, crate_root, out_dir))
 }
 
 fn build_impl(
     args: &Args,
     config: &Config,
     metadata: &CargoMetadata,
+    root_dir: &Path,
     out_dir: &Path,
 ) -> Result<PathBuf, Error> {
     let crate_ = metadata
@@ -105,7 +106,7 @@ fn build_impl(
     let bootloader = build_bootloader(tmp_dir.path(), &config)?;
     tmp_dir.close()?;
 
-    create_disk_image(&out_dir, &bin_name, &config, kernel, kernel_info_block, &bootloader)
+    create_disk_image(root_dir, out_dir, &bin_name, &config, kernel, kernel_info_block, &bootloader)
 }
 
 fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Error> {
@@ -330,6 +331,7 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
 }
 
 fn create_disk_image(
+    root_dir: &Path,
     out_dir: &Path,
     bin_name: &str,
     config: &Config,
@@ -347,7 +349,8 @@ fn create_disk_image(
         output_path = output.clone();
     }
 
-    println!("Creating disk image at {}", output_path.display());
+    println!("Creating disk image at {}",
+        output_path.strip_prefix(root_dir).unwrap_or(output_path.as_path()).display());
     let mut output = File::create(&output_path)?;
     output.write_all(&bootloader_data)?;
     output.write_all(&kernel_info_block)?;
