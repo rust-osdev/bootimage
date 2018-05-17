@@ -6,18 +6,6 @@ use wait_timeout::ChildExt;
 use std::time::Duration;
 
 pub(crate) fn test(args: Args) -> Result<(), Error> {
-    run_cargo_test()?;
-    run_integration_tests(args)?;
-    Ok(())
-}
-
-fn run_cargo_test() -> io::Result<process::ExitStatus> {
-    let mut command = process::Command::new("cargo");
-    command.arg("test");
-    command.status()
-}
-
-fn run_integration_tests(args: Args) -> Result<(), Error> {
     let (args, config, metadata, root_dir, out_dir) = build::common_setup(args)?;
 
     let test_args = args.clone();
