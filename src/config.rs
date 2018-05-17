@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 use Error;
 use toml::Value;
 
+#[derive(Debug, Clone)]
 pub struct Config {
     pub manifest_path: PathBuf,
     pub default_target: Option<String>,
@@ -11,6 +12,7 @@ pub struct Config {
     pub run_command: Vec<String>,
 }
 
+#[derive(Debug, Clone)]
 pub struct BootloaderConfig {
     pub name: String,
     pub precompiled: bool,

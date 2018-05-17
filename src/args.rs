@@ -12,6 +12,14 @@ pub(crate) fn parse_args() -> Command {
             Command::BuildHelp => Command::RunHelp,
             cmd => cmd,
         },
+        Some("test") => match parse_build_args(args) {
+            Command::Build(args) => {
+                assert_eq!(args.bin_name, None, "No `--bin` argument allowed for `bootimage test`");
+                Command::Test(args)
+            },
+            Command::BuildHelp => Command::TestHelp,
+            cmd => cmd,
+        },
         Some("--help") | Some("-h") => Command::Help,
         Some("--version") => Command::Version,
         _ => Command::NoSubcommand,
@@ -123,6 +131,7 @@ where
     })
 }
 
+#[derive(Debug, Clone)]
 pub struct Args {
     /// All arguments that are passed to cargo.
     pub cargo_args: Vec<String>,
@@ -166,5 +175,12 @@ impl Args {
         self.target = Some(target.clone());
         self.cargo_args.push("--target".into());
         self.cargo_args.push(target);
+    }
+
+    pub fn set_bin_name(&mut self, bin_name: String) {
+        assert!(self.bin_name.is_none());
+        self.bin_name = Some(bin_name.clone());
+        self.cargo_args.push("--bin".into());
+        self.cargo_args.push(bin_name);
     }
 }

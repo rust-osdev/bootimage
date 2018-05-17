@@ -26,7 +26,7 @@ pub(crate) fn run(args: Args) -> Result<(), Error> {
     run_impl(&args, &config, &output_path)
 }
 
-fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf, PathBuf), Error> {
+pub(crate) fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf, PathBuf), Error> {
     fn out_dir(args: &Args, metadata: &CargoMetadata) -> PathBuf {
         let target_dir = PathBuf::from(&metadata.target_directory);
         let mut out_dir = target_dir;
@@ -75,7 +75,7 @@ fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf,
     Ok((args, config, metadata, crate_root, out_dir))
 }
 
-fn build_impl(
+pub(crate) fn build_impl(
     args: &Args,
     config: &Config,
     metadata: &CargoMetadata,
