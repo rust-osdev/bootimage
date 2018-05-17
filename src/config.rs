@@ -5,7 +5,7 @@ use toml::Value;
 pub struct Config {
     pub manifest_path: PathBuf,
     pub default_target: Option<String>,
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
     pub bootloader: BootloaderConfig,
     pub minimum_image_size: Option<u64>,
     pub run_command: Vec<String>,
@@ -144,7 +144,7 @@ impl Into<Config> for ConfigBuilder {
         Config {
             manifest_path: self.manifest_path.expect("manifest path must be set"),
             default_target: self.default_target,
-            output: self.output.unwrap_or(PathBuf::from("bootimage.bin")),
+            output: self.output,
             bootloader: self.bootloader.unwrap_or(default_bootloader_config).into(),
             minimum_image_size: self.minimum_image_size,
             run_command: self.run_command.unwrap_or(vec![

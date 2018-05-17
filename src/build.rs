@@ -15,14 +15,15 @@ type KernelInfoBlock = [u8; BLOCK_SIZE];
 pub(crate) fn build(args: Args) -> Result<(), Error> {
     let (args, config, metadata, out_dir) = common_setup(args)?;
 
-    build_impl(&args, &config, &metadata, &out_dir)
+    build_impl(&args, &config, &metadata, &out_dir)?;
+    Ok(())
 }
 
 pub(crate) fn run(args: Args) -> Result<(), Error> {
     let (args, config, metadata, out_dir) = common_setup(args)?;
 
-    build_impl(&args, &config, &metadata, &out_dir)?;
-    run_impl(&args, &config)
+    let output_path = build_impl(&args, &config, &metadata, &out_dir)?;
+    run_impl(&args, &config, &output_path)
 }
 
 fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadata, PathBuf), Error> {
@@ -79,8 +80,15 @@ fn build_impl(
     config: &Config,
     metadata: &CargoMetadata,
     out_dir: &Path,
-) -> Result<(), Error> {
-    let kernel = build_kernel(&out_dir, &args, &config, &metadata)?;
+) -> Result<PathBuf, Error> {
+    let crate_ = metadata
+        .packages
+        .iter()
+        .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
+        .expect("Could not read crate name from cargo metadata");
+    let bin_name: String = args.bin_name().as_ref().unwrap_or(&crate_.name).clone();
+
+    let kernel = build_kernel(&out_dir, &bin_name, &args)?;
 
     let kernel_size = kernel.metadata()?.len();
     let kernel_info_block = create_kernel_info_block(kernel_size);
@@ -97,20 +105,17 @@ fn build_impl(
     let bootloader = build_bootloader(tmp_dir.path(), &config)?;
     tmp_dir.close()?;
 
-    create_disk_image(&config, kernel, kernel_info_block, &bootloader)?;
-
-    Ok(())
+    create_disk_image(&out_dir, &bin_name, &config, kernel, kernel_info_block, &bootloader)
 }
 
-fn run_impl(args: &Args, config: &Config) -> Result<(), Error> {
+fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Error> {
     let command = &config.run_command[0];
     let mut command = process::Command::new(command);
     for arg in &config.run_command[1..] {
         command.arg(
             arg.replace(
                 "{}",
-                config
-                    .output
+                output_path
                     .to_str()
                     .expect("output must be valid unicode"),
             ),
@@ -127,17 +132,9 @@ fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, cargo_metadata::Err
 
 fn build_kernel(
     out_dir: &Path,
+    bin_name: &str,
     args: &args::Args,
-    config: &Config,
-    metadata: &CargoMetadata,
 ) -> Result<File, Error> {
-    let crate_ = metadata
-        .packages
-        .iter()
-        .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
-        .expect("Could not read crate name from cargo metadata");
-    let crate_name = &crate_.name;
-
     // compile kernel
     println!("Building kernel");
     let exit_status = run_xbuild(&args.cargo_args)?;
@@ -146,7 +143,7 @@ fn build_kernel(
     }
 
     let mut kernel_path = out_dir.to_owned();
-    kernel_path.push(crate_name);
+    kernel_path.push(bin_name);
     let kernel = File::open(kernel_path)?;
     Ok(kernel)
 }
@@ -333,15 +330,25 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
 }
 
 fn create_disk_image(
+    out_dir: &Path,
+    bin_name: &str,
     config: &Config,
     mut kernel: File,
     kernel_info_block: KernelInfoBlock,
     bootloader_data: &[u8],
-) -> Result<(), Error> {
+) -> Result<PathBuf, Error> {
     use std::io::{Read, Write};
 
-    println!("Creating disk image at {}", config.output.display());
-    let mut output = File::create(&config.output)?;
+    let mut output_path = PathBuf::from(out_dir);
+    let file_name = format!("bootimage-{}.bin", bin_name);
+    output_path.push(file_name);
+
+    if let Some(ref output) = config.output {
+        output_path = output.clone();
+    }
+
+    println!("Creating disk image at {}", output_path.display());
+    let mut output = File::create(&output_path)?;
     output.write_all(&bootloader_data)?;
     output.write_all(&kernel_info_block)?;
 
@@ -372,5 +379,5 @@ fn create_disk_image(
         }
     }
 
-    Ok(())
+    Ok(output_path)
 }
