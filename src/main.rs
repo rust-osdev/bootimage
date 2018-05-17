@@ -3,6 +3,7 @@ extern crate cargo_metadata;
 extern crate tempdir;
 extern crate toml;
 extern crate xmas_elf;
+extern crate wait_timeout;
 
 use std::{io, process};
 use args::Args;

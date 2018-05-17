@@ -2,6 +2,8 @@ use std::{io, process};
 use Error;
 use args::Args;
 use build;
+use wait_timeout::ChildExt;
+use std::time::Duration;
 
 pub(crate) fn test(args: Args) -> Result<(), Error> {
     run_cargo_test()?;
@@ -60,7 +62,15 @@ fn run_integration_tests(args: Args) -> Result<(), Error> {
         command.arg("none");
         command.arg("-serial");
         command.arg(format!("file:{}-output.txt", test_path.display()));
-        command.status()?; // TODO timeout
+        let mut child = command.spawn()?;
+        let timeout = Duration::from_secs(60);
+        match child.wait_timeout(timeout)? {
+            Some(_status) => {},
+            None => {
+                child.kill()?;
+                child.wait()?;
+            }
+        }
     }
 
     Ok(())
