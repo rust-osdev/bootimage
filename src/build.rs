@@ -15,14 +15,14 @@ type KernelInfoBlock = [u8; BLOCK_SIZE];
 pub(crate) fn build(args: Args) -> Result<(), Error> {
     let (args, config, metadata, root_dir, out_dir) = common_setup(args)?;
 
-    build_impl(&args, &config, &metadata, &root_dir, &out_dir)?;
+    build_impl(&args, &config, &metadata, &root_dir, &out_dir, true)?;
     Ok(())
 }
 
 pub(crate) fn run(args: Args) -> Result<(), Error> {
     let (args, config, metadata, root_dir, out_dir) = common_setup(args)?;
 
-    let output_path = build_impl(&args, &config, &metadata, &root_dir, &out_dir)?;
+    let output_path = build_impl(&args, &config, &metadata, &root_dir, &out_dir, true)?;
     run_impl(&args, &config, &output_path)
 }
 
@@ -81,6 +81,7 @@ pub(crate) fn build_impl(
     metadata: &CargoMetadata,
     root_dir: &Path,
     out_dir: &Path,
+    verbose: bool,
 ) -> Result<PathBuf, Error> {
     let crate_ = metadata
         .packages
@@ -89,7 +90,7 @@ pub(crate) fn build_impl(
         .expect("Could not read crate name from cargo metadata");
     let bin_name: String = args.bin_name().as_ref().unwrap_or(&crate_.name).clone();
 
-    let kernel = build_kernel(&out_dir, &bin_name, &args)?;
+    let kernel = build_kernel(&out_dir, &bin_name, &args, verbose)?;
 
     let kernel_size = kernel.metadata()?.len();
     let kernel_info_block = create_kernel_info_block(kernel_size);
@@ -106,7 +107,7 @@ pub(crate) fn build_impl(
     let bootloader = build_bootloader(tmp_dir.path(), &config)?;
     tmp_dir.close()?;
 
-    create_disk_image(root_dir, out_dir, &bin_name, &config, kernel, kernel_info_block, &bootloader)
+    create_disk_image(root_dir, out_dir, &bin_name, &config, kernel, kernel_info_block, &bootloader, verbose)
 }
 
 fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Error> {
@@ -135,9 +136,12 @@ fn build_kernel(
     out_dir: &Path,
     bin_name: &str,
     args: &args::Args,
+    verbose: bool,
 ) -> Result<File, Error> {
     // compile kernel
-    println!("Building kernel");
+    if verbose {
+        println!("Building kernel");
+    }
     let exit_status = run_xbuild(&args.cargo_args)?;
     if !exit_status.success() {
         process::exit(1)
@@ -338,6 +342,7 @@ fn create_disk_image(
     mut kernel: File,
     kernel_info_block: KernelInfoBlock,
     bootloader_data: &[u8],
+    verbose: bool,
 ) -> Result<PathBuf, Error> {
     use std::io::{Read, Write};
 
@@ -349,8 +354,10 @@ fn create_disk_image(
         output_path = output.clone();
     }
 
-    println!("Creating disk image at {}",
-        output_path.strip_prefix(root_dir).unwrap_or(output_path.as_path()).display());
+    if verbose {
+        println!("Creating disk image at {}",
+            output_path.strip_prefix(root_dir).unwrap_or(output_path.as_path()).display());
+    }
     let mut output = File::create(&output_path)?;
     output.write_all(&bootloader_data)?;
     output.write_all(&kernel_info_block)?;
