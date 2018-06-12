@@ -1,4 +1,4 @@
-Creates a bootable disk image from a Rust kernel
+Creates a bootable disk image from a Rust kernel and launches it in QEMU
 
 USAGE:
     bootimage run [BUILD_OPTS] -- [RUN_OPTS]        Build and run a disk image

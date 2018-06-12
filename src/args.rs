@@ -12,6 +12,14 @@ pub(crate) fn parse_args() -> Command {
             Command::BuildHelp => Command::RunHelp,
             cmd => cmd,
         },
+        Some("test") => match parse_build_args(args) {
+            Command::Build(args) => {
+                assert_eq!(args.bin_name, None, "No `--bin` argument allowed for `bootimage test`");
+                Command::Test(args)
+            },
+            Command::BuildHelp => Command::TestHelp,
+            cmd => cmd,
+        },
         Some("--help") | Some("-h") => Command::Help,
         Some("--version") => Command::Version,
         _ => Command::NoSubcommand,
@@ -23,6 +31,7 @@ where
     A: Iterator<Item = String>,
 {
     let mut manifest_path: Option<PathBuf> = None;
+    let mut bin_name: Option<String> = None;
     let mut target: Option<String> = None;
     let mut release: Option<bool> = None;
     let mut update_bootloader: Option<bool> = None;
@@ -50,6 +59,21 @@ where
                 }
                 "--version" => {
                     return Command::Version;
+                }
+                "--bin" => {
+                    let next = arg_iter.next();
+                    set(&mut bin_name, next.clone());
+                    cargo_args.push(arg);
+                    if let Some(next) = next {
+                        cargo_args.push(next);
+                    }
+                }
+                _ if arg.starts_with("--bin=") => {
+                    set(
+                        &mut bin_name,
+                        Some(String::from(arg.trim_left_matches("--bin="))),
+                    );
+                    cargo_args.push(arg);
                 }
                 "--target" => {
                     let next = arg_iter.next();
@@ -99,6 +123,7 @@ where
     Command::Build(Args {
         cargo_args,
         run_args,
+        bin_name,
         target,
         manifest_path,
         release: release.unwrap_or(false),
@@ -106,6 +131,7 @@ where
     })
 }
 
+#[derive(Debug, Clone)]
 pub struct Args {
     /// All arguments that are passed to cargo.
     pub cargo_args: Vec<String>,
@@ -113,6 +139,8 @@ pub struct Args {
     pub run_args: Vec<String>,
     /// The manifest path (also present in `cargo_args`).
     manifest_path: Option<PathBuf>,
+    /// The name of the binary (passed `--bin` argument) (also present in `cargo_args`).
+    bin_name: Option<String>,
     /// The target triple (also present in `cargo_args`).
     target: Option<String>,
     /// The release flag (also present in `cargo_args`).
@@ -124,6 +152,10 @@ pub struct Args {
 impl Args {
     pub fn manifest_path(&self) -> &Option<PathBuf> {
         &self.manifest_path
+    }
+
+    pub fn bin_name(&self) -> &Option<String> {
+        &self.bin_name
     }
 
     pub fn target(&self) -> &Option<String> {
@@ -143,5 +175,12 @@ impl Args {
         self.target = Some(target.clone());
         self.cargo_args.push("--target".into());
         self.cargo_args.push(target);
+    }
+
+    pub fn set_bin_name(&mut self, bin_name: String) {
+        assert!(self.bin_name.is_none());
+        self.bin_name = Some(bin_name.clone());
+        self.cargo_args.push("--bin".into());
+        self.cargo_args.push(bin_name);
     }
 }
