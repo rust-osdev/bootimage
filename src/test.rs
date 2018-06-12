@@ -87,6 +87,7 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
     }
 
     if tests.iter().all(|t| t.1 == TestResult::Ok) {
+        println!("All tests succeeded.");
         Ok(())
     } else {
         writeln!(io::stderr(), "The following tests failed:")?;
