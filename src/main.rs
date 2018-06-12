@@ -71,7 +71,7 @@ fn run() -> Result<(), Error> {
         Command::Help => Ok(help::help()),
         Command::BuildHelp => Ok(help::build_help()),
         Command::RunHelp => Ok(help::run_help()),
-        Command::TestHelp => unimplemented!(),
+        Command::TestHelp => Ok(help::test_help()),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
     }
 }

@@ -1,0 +1,17 @@
+Runs integration tests of a Rust kernel
+
+The following conventions are used:
+
+- All executables starting with `test-` are treated as unit test.
+- Tests must print either ok or failed over the serial port. When printing
+  failed they can print additional information such as a panic message (in the
+  next lines).
+- Tests are run with a timeout of 1 minute. If the test has not completed in
+  time, it is reported as "timed out".
+
+
+USAGE:
+    bootimage test [BUILD_OPTS]        Runs integration tests
+
+    (for other forms of usage see `bootimage --help`)
+    (for BUILD_OPTS see `bootimage build --help`)
