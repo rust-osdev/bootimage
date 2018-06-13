@@ -1,5 +1,5 @@
 use std::{env, mem};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use Command;
 
 pub(crate) fn parse_args() -> Command {
@@ -92,14 +92,17 @@ where
                 }
                 "--manifest-path" => {
                     let next = arg_iter.next();
-                    set(&mut manifest_path, next.as_ref().map(|p| PathBuf::from(&p)));
+                    set(&mut manifest_path, next.as_ref().map(|p| {
+                        Path::new(&p).canonicalize().expect("--manifest-path invalid")
+                    }));
                     cargo_args.push(arg);
                     if let Some(next) = next {
                         cargo_args.push(next);
                     }
                 }
                 _ if arg.starts_with("--manifest-path=") => {
-                    let path = PathBuf::from(arg.trim_left_matches("--manifest-path="));
+                    let path = Path::new(arg.trim_left_matches("--manifest-path="))
+                        .canonicalize().expect("--manifest-path invalid");
                     set(&mut manifest_path, Some(path));
                     cargo_args.push(arg);
                 }
