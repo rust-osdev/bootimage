@@ -52,7 +52,9 @@ pub(crate) fn common_setup(mut args: Args) -> Result<(Args, Config, CargoMetadat
 
     if args.target().is_none() {
         if let Some(ref target) = config.default_target {
-            args.set_target(target.clone());
+            let mut canonicalized_target = crate_root.clone();
+            canonicalized_target.push(target);
+            args.set_target(canonicalized_target.to_string_lossy().into_owned());
         }
     }
 
