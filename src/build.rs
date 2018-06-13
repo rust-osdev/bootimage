@@ -155,8 +155,6 @@ fn build_kernel(
     let exit_status = run_xbuild(&args.cargo_args)
         .context("Failed to run `cargo xbuild`")?;
     if !exit_status.success() {
-        writeln!(io::stderr(), "Failed to run `cargo xbuild`. Perhaps it is not installed?")?;
-        writeln!(io::stderr(), "Run `cargo install cargo-xbuild` to install it.")?;
         process::exit(1)
     }
 
@@ -170,7 +168,23 @@ fn run_xbuild(args: &[String]) -> io::Result<process::ExitStatus> {
     let mut command = process::Command::new("cargo");
     command.arg("xbuild");
     command.args(args);
-    command.status()
+    let exit_status = command.status()?;
+
+    if !exit_status.success() {
+        let mut help_command = process::Command::new("cargo");
+        help_command.arg("xbuild").arg("--help");
+        help_command.stdout(process::Stdio::null());
+        help_command.stderr(process::Stdio::null());
+        if let Ok(help_exit_status) = help_command.status() {
+            if !help_exit_status.success() {
+                let mut stderr = io::stderr();
+                writeln!(stderr, "Failed to run `cargo xbuild`. Perhaps it is not installed?")?;
+                writeln!(stderr, "Run `cargo install cargo-xbuild` to install it.")?;
+            }
+        }
+    }
+
+    Ok(exit_status)
 }
 
 fn create_kernel_info_block(kernel_size: u64) -> KernelInfoBlock {
@@ -316,8 +330,6 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
         println!("Building bootloader");
         let exit_status = run_xbuild(args).context("Failed to run `cargo xbuild`")?;
         if !exit_status.success() {
-            writeln!(io::stderr(), "Failed to run `cargo xbuild`. Perhaps it is not installed?")?;
-            writeln!(io::stderr(), "Run `cargo install cargo-xbuild` to install it.")?;
             process::exit(1)
         }
 
