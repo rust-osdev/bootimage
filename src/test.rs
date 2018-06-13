@@ -52,7 +52,8 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         command.arg("-serial");
         command.arg(format!("file:{}", output_file));
         command.stderr(process::Stdio::null());
-        let mut child = command.spawn().context("Failed to launch QEMU")?;
+        let mut child = command.spawn()
+            .context(format_err!("Failed to launch QEMU: {:?}", command))?;
         let timeout = Duration::from_secs(60);
         match child.wait_timeout(timeout).context("Failed to wait with timeout")? {
             None => {
@@ -62,7 +63,8 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
                 writeln!(io::stderr(), "Timed Out")?;
             }
             Some(_) => {
-                let output = fs::read_to_string(output_file).context("Failed to read test output file")?;
+                let output = fs::read_to_string(&output_file)
+                    .context(format_err!("Failed to read test output file {}", output_file))?;
                 if output.starts_with("ok\n") {
                     test_result = TestResult::Ok;
                     println!("Ok");

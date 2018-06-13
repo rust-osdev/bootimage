@@ -128,7 +128,7 @@ fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Erro
         );
     }
     command.args(&args.run_args);
-    command.status().context("Failed to execute run command")?;
+    command.status().context(format_err!("Failed to execute run command: {:?}", command))?;
     Ok(())
 }
 
