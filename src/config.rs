@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use Error;
+use failure::{Error, ResultExt};
 use toml::Value;
 
 #[derive(Debug, Clone)]
@@ -27,8 +27,9 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
     use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
-        File::open(&manifest_path)?.read_to_string(&mut content)?;
-        content.parse()?
+        File::open(&manifest_path).context("Failed to open Cargo.toml")?
+            .read_to_string(&mut content).context("Failed to read Cargo.toml")?;
+        content.parse::<Value>().context("Failed to parse Cargo.toml")?
     };
 
     let metadata = cargo_toml
@@ -42,10 +43,10 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 ..Default::default()
             }.into())
         }
-        Some(metadata) => metadata.as_table().ok_or(Error::Config(format!(
+        Some(metadata) => metadata.as_table().ok_or(format_err!(
             "Bootimage configuration invalid: {:?}",
             metadata
-        )))?,
+        ))?,
     };
 
     let mut config = ConfigBuilder {
@@ -74,11 +75,11 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         ("path", Value::String(s)) => {
                             bootloader_config.path = Some(Path::new(&s).canonicalize()?);
                         }
-                        (key, value) => Err(Error::Config(format!(
+                        (key, value) => Err(format_err!(
                             "unexpected \
                              `package.metadata.bootimage.bootloader` key `{}` with value `{}`",
                             key, value
-                        )))?,
+                        ))?,
                     }
                 }
                 config.bootloader = Some(bootloader_config);
@@ -87,11 +88,11 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 if x >= 0 {
                     config.minimum_image_size = Some((x * 1024 * 1024) as u64); // MiB -> Byte
                 } else {
-                    Err(Error::Config(format!(
+                    Err(format_err!(
                         "unexpected `package.metadata.bootimage` \
                          key `minimum-image-size` with negative value `{}`",
                         value
-                    )))?
+                    ))?
                 }
             }
             ("run-command", Value::Array(array)) => {
@@ -99,18 +100,18 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 for value in array {
                     match value {
                         Value::String(s) => command.push(s),
-                        _ => Err(Error::Config(format!(
+                        _ => Err(format_err!(
                             "run-command must be a list of strings"
-                        )))?,
+                        ))?,
                     }
                 }
                 config.run_command = Some(command);
             }
-            (key, value) => Err(Error::Config(format!(
+            (key, value) => Err(format_err!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
                 key, value
-            )))?,
+            ))?,
         }
     }
     Ok(config.into())

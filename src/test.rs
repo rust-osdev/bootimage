@@ -1,5 +1,5 @@
 use std::{fs, io, process};
-use Error;
+use failure::{Error, ResultExt};
 use args::Args;
 use build;
 use wait_timeout::ChildExt;
@@ -52,17 +52,17 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         command.arg("-serial");
         command.arg(format!("file:{}", output_file));
         command.stderr(process::Stdio::null());
-        let mut child = command.spawn()?;
+        let mut child = command.spawn().context("Failed to launch QEMU")?;
         let timeout = Duration::from_secs(60);
-        match child.wait_timeout(timeout)? {
+        match child.wait_timeout(timeout).context("Failed to wait with timeout")? {
             None => {
-                child.kill()?;
-                child.wait()?;
+                child.kill().context("Failed to kill QEMU")?;
+                child.wait().context("Failed to wait for QEMU process")?;
                 test_result = TestResult::TimedOut;
                 writeln!(io::stderr(), "Timed Out")?;
             }
             Some(_) => {
-                let output = fs::read_to_string(output_file)?;
+                let output = fs::read_to_string(output_file).context("Failed to read test output file")?;
                 if output.starts_with("ok\n") {
                     test_result = TestResult::Ok;
                     println!("Ok");

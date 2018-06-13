@@ -1,11 +1,13 @@
 use std::fs::{self, File};
 use std::{io, process};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::io::Write;
 use byteorder::{ByteOrder, LittleEndian};
 use args::{self, Args};
 use config::{self, Config};
 use cargo_metadata::{self, Metadata as CargoMetadata, Package as CrateMetadata};
-use Error;
+use failure::{Error, ResultExt};
 use xmas_elf;
 use tempdir::TempDir;
 
@@ -94,7 +96,7 @@ pub(crate) fn build_impl(
 
     let kernel = build_kernel(&out_dir, &bin_name, &args, verbose)?;
 
-    let kernel_size = kernel.metadata()?.len();
+    let kernel_size = kernel.metadata().context("Failed to read kernel output file")?.len();
     let kernel_info_block = create_kernel_info_block(kernel_size);
 
     if args.update_bootloader() {
@@ -102,12 +104,12 @@ pub(crate) fn build_impl(
         bootloader_cargo_lock.push("bootloader");
         bootloader_cargo_lock.push("Cargo.lock");
 
-        fs::remove_file(bootloader_cargo_lock)?;
+        fs::remove_file(bootloader_cargo_lock).context("Failed to remove Cargo.lock")?;
     }
 
-    let tmp_dir = TempDir::new("bootloader")?;
-    let bootloader = build_bootloader(tmp_dir.path(), &config)?;
-    tmp_dir.close()?;
+    let tmp_dir = TempDir::new("bootloader").context("Failed to create a temporary directory")?;
+    let bootloader = build_bootloader(tmp_dir.path(), &config).context("Failed to build bootloader")?;
+    tmp_dir.close().context("Failed to close temporary directory")?;
 
     create_disk_image(root_dir, out_dir, &bin_name, &config, kernel, kernel_info_block, &bootloader, verbose)
 }
@@ -126,12 +128,18 @@ fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Erro
         );
     }
     command.args(&args.run_args);
-    command.status()?;
+    command.status().context("Failed to execute run command")?;
     Ok(())
 }
 
-fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, cargo_metadata::Error> {
-    cargo_metadata::metadata(args.manifest_path().as_ref().map(PathBuf::as_path))
+#[derive(Debug, Fail)]
+#[fail(display = "Failed to execute `cargo metadata`")]
+pub struct CargoMetadataError(Mutex<cargo_metadata::Error>);
+
+fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, Error> {
+    let metadata = cargo_metadata::metadata(args.manifest_path().as_ref().map(PathBuf::as_path))
+        .map_err(|e| CargoMetadataError(Mutex::new(e)))?;
+    Ok(metadata)
 }
 
 fn build_kernel(
@@ -144,14 +152,17 @@ fn build_kernel(
     if verbose {
         println!("Building kernel");
     }
-    let exit_status = run_xbuild(&args.cargo_args)?;
+    let exit_status = run_xbuild(&args.cargo_args)
+        .context("Failed to run `cargo xbuild`")?;
     if !exit_status.success() {
+        writeln!(io::stderr(), "Failed to run `cargo xbuild`. Perhaps it is not installed?")?;
+        writeln!(io::stderr(), "Run `cargo install cargo-xbuild` to install it.")?;
         process::exit(1)
     }
 
     let mut kernel_path = out_dir.to_owned();
     kernel_path.push(bin_name);
-    let kernel = File::open(kernel_path)?;
+    let kernel = File::open(kernel_path).context("Failed to open kernel output file")?;
     Ok(kernel)
 }
 
@@ -186,13 +197,15 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
     let src_lib = {
         let mut dir = bootloader_dir.to_owned();
         dir.push("src");
-        fs::create_dir_all(dir.as_path())?;
+        fs::create_dir_all(dir.as_path())
+            .context("Failed to create directory for bootloader download crate")?;
         dir.push("lib.rs");
         dir
     };
 
     {
-        let mut cargo_toml_file = File::create(&cargo_toml)?;
+        let mut cargo_toml_file = File::create(&cargo_toml)
+            .context("Failed to create Cargo.toml for bootloader download crate")?;
         cargo_toml_file.write_all(
             r#"
             [package]
@@ -201,7 +214,7 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
             version = "0.0.0"
 
         "#.as_bytes(),
-        )?;
+        ).context("Failed to write to Cargo.toml for bootloader download crate")?;
         cargo_toml_file.write_all(
             format!(
                 r#"
@@ -209,7 +222,7 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
         "#,
                 config.bootloader.name
             ).as_bytes(),
-        )?;
+        ).context("Failed to write to Cargo.toml for bootloader download crate")?;
         if let &Some(ref version) = &config.bootloader.version {
             cargo_toml_file.write_all(
                 format!(
@@ -218,7 +231,7 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
             "#,
                     version
                 ).as_bytes(),
-            )?;
+            ).context("Failed to write to Cargo.toml for bootloader download crate")?;
         }
         if let &Some(ref git) = &config.bootloader.git {
             cargo_toml_file.write_all(
@@ -228,7 +241,7 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
             "#,
                     git
                 ).as_bytes(),
-            )?;
+            ).context("Failed to write to Cargo.toml for bootloader download crate")?;
         }
         if let &Some(ref branch) = &config.bootloader.branch {
             cargo_toml_file.write_all(
@@ -238,7 +251,7 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
             "#,
                     branch
                 ).as_bytes(),
-            )?;
+            ).context("Failed to write to Cargo.toml for bootloader download crate")?;
         }
         if let &Some(ref path) = &config.bootloader.path {
             cargo_toml_file.write_all(
@@ -248,30 +261,34 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
             "#,
                     path.display()
                 ).as_bytes(),
-            )?;
+            ).context("Failed to write to Cargo.toml for bootloader download crate")?;
         }
 
-        File::create(src_lib)?.write_all(
-            r#"
-            #![no_std]
-        "#.as_bytes(),
-        )?;
+        File::create(src_lib).context("Failed to create lib.rs for bootloader download crate")?
+            .write_all(
+                r#"
+                #![no_std]
+            "#.as_bytes(),
+            ).context("Failed to write to lib.rs for bootloader download crate")?;
     }
 
     let mut command = process::Command::new("cargo");
     command.arg("fetch");
     command.current_dir(bootloader_dir);
-    assert!(command.status()?.success(), "Bootloader download failed.");
+    if !command.status()?.success() {
+        Err(format_err!("Bootloader download failed."))?
+    }
 
-    let metadata = cargo_metadata::metadata_deps(Some(&cargo_toml), true)?;
+    let metadata = cargo_metadata::metadata_deps(Some(&cargo_toml), true)
+        .map_err(|e| CargoMetadataError(Mutex::new(e)))?;
     let bootloader = metadata
         .packages
         .iter()
         .find(|p| p.name == config.bootloader.name)
-        .expect(&format!(
+        .ok_or(format_err!(
             "Could not find crate named “{}”",
             config.bootloader.name
-        ));
+        ))?;
 
     Ok(bootloader.clone())
 }
@@ -297,8 +314,10 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
         ];
 
         println!("Building bootloader");
-        let exit_status = run_xbuild(args)?;
+        let exit_status = run_xbuild(args).context("Failed to run `cargo xbuild`")?;
         if !exit_status.success() {
+            writeln!(io::stderr(), "Failed to run `cargo xbuild`. Perhaps it is not installed?")?;
+            writeln!(io::stderr(), "Run `cargo install cargo-xbuild` to install it.")?;
             process::exit(1)
         }
 
@@ -315,16 +334,8 @@ fn build_bootloader(bootloader_dir: &Path, config: &Config) -> Result<Box<[u8]>,
     };
 
     let mut bootloader_elf_bytes = Vec::new();
-    let mut bootloader = File::open(&bootloader_elf_path).map_err(|err| {
-        Error::Bootloader(
-            format!(
-                "Could not open bootloader at {}",
-                bootloader_elf_path.display()
-            ),
-            err,
-        )
-    })?;
-    bootloader.read_to_end(&mut bootloader_elf_bytes)?;
+    let mut bootloader = File::open(&bootloader_elf_path).context("Could not open bootloader")?;
+    bootloader.read_to_end(&mut bootloader_elf_bytes).context("Could not read bootloader")?;
 
     // copy bootloader section of ELF file to bootloader_path
     let elf_file = xmas_elf::ElfFile::new(&bootloader_elf_bytes).unwrap();
@@ -360,9 +371,9 @@ fn create_disk_image(
         println!("Creating disk image at {}",
             output_path.strip_prefix(root_dir).unwrap_or(output_path.as_path()).display());
     }
-    let mut output = File::create(&output_path)?;
-    output.write_all(&bootloader_data)?;
-    output.write_all(&kernel_info_block)?;
+    let mut output = File::create(&output_path).context("Could not create output bootimage file")?;
+    output.write_all(&bootloader_data).context("Could not write output bootimage file")?;
+    output.write_all(&kernel_info_block).context("Could not write output bootimage file")?;
 
     // write out kernel elf file
     let kernel_size = kernel.metadata()?.len();
@@ -381,7 +392,7 @@ fn create_disk_image(
 
     let padding_size = ((512 - (kernel_size % 512)) % 512) as usize;
     let padding = [0u8; 512];
-    output.write_all(&padding[..padding_size])?;
+    output.write_all(&padding[..padding_size]).context("Could not write output bootimage file")?;
 
     if let Some(min_size) = config.minimum_image_size {
         // we already wrote to output successfully,

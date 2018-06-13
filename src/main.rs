@@ -4,6 +4,8 @@ extern crate tempdir;
 extern crate toml;
 extern crate xmas_elf;
 extern crate wait_timeout;
+#[macro_use]
+extern crate failure;
 
 use std::{io, process};
 use args::Args;
@@ -34,34 +36,7 @@ pub fn main() {
     }
 }
 
-#[derive(Debug)]
-pub enum Error {
-    Config(String),
-    Bootloader(String, io::Error),
-    Io(io::Error),
-    Toml(toml::de::Error),
-    CargoMetadata(cargo_metadata::Error),
-}
-
-impl From<io::Error> for Error {
-    fn from(other: io::Error) -> Self {
-        Error::Io(other)
-    }
-}
-
-impl From<toml::de::Error> for Error {
-    fn from(other: toml::de::Error) -> Self {
-        Error::Toml(other)
-    }
-}
-
-impl From<cargo_metadata::Error> for Error {
-    fn from(other: cargo_metadata::Error) -> Self {
-        Error::CargoMetadata(other)
-    }
-}
-
-fn run() -> Result<(), Error> {
+fn run() -> Result<(), failure::Error> {
     let command = args::parse_args();
     match command {
         Command::NoSubcommand => help::no_subcommand(),
