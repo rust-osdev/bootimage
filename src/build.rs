@@ -450,12 +450,12 @@ fn create_disk_image(
 
     let kernel_size = write_file_to_file(&mut output, &mut kernel)?;
 
-    pad_file(&mut output, kernel_size, &[_; 512])?;
+    pad_file(&mut output, kernel_size, &[0; 512])?;
 
     if let Some(ref mut package) = maybe_package {
         println!("Writing specified package to output");
         let package_size = write_file_to_file(&mut output, package)?;
-        pad_file(&mut output, package_size, &[_; 512])?;
+        pad_file(&mut output, package_size, &[0; 512])?;
     }
 
     // let kernel_size = kernel.metadata()?.len();
