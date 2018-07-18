@@ -10,7 +10,16 @@ Creates a bootable disk image from a Rust OS kernel.
 
 ## Usage
 
-To build the kernel project and create a bootable disk image from it, run:
+First you need to add a dependency on the `bootloader` crate:
+
+```toml
+# in your Cargo.toml
+
+[dependencies]
+bootloader = "0.2.0-alpha"
+```
+
+Now you can build the kernel project and create a bootable disk image from it by running:
 
 ```
 > bootimage build --target your_custom_target.json [other_args]
@@ -33,19 +42,7 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
 
     [package.metadata.bootimage.bootloader]
     name = "bootloader"                 # The bootloader crate name
-    version = ""                        # The bootloader version that should be used
-    git = ""                            # Use the bootloader from this git repository
-    branch = ""                         # The git branch to use (defaults to master)
-    path = ""                           # Use the bootloader from this local path
-    precompiled = false                 # Whether the bootloader crate is precompiled
     target = "x86_64-bootloader.json"   # Target triple for compiling the bootloader
-```
-
-If no `[package.metadata.bootimage.bootloader]` sub-table is specified, it defaults to:
-
-```toml
-name = "bootloader_precompiled"
-precompiled = true
 ```
 
 ## License
