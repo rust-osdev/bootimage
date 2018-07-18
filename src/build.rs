@@ -3,7 +3,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use cargo_metadata::{self, Metadata as CargoMetadata};
 use config::{self, Config};
 use failure::{Error, ResultExt};
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
