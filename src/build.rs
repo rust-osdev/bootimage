@@ -233,20 +233,11 @@ fn download_bootloader(bootloader_dir: &Path, config: &Config) -> Result<CrateMe
             format!(
                 r#"
             [dependencies.{}]
+            version = "{}"
         "#,
-                config.bootloader.name
+                config.bootloader.name, config.bootloader.version
             ).as_bytes(),
         ).context("Failed to write to Cargo.toml for bootloader download crate")?;
-        if let &Some(ref version) = &config.bootloader.version {
-            cargo_toml_file.write_all(
-                format!(
-                    r#"
-                    version = "{}"
-            "#,
-                    version
-                ).as_bytes(),
-            ).context("Failed to write to Cargo.toml for bootloader download crate")?;
-        }
         if let &Some(ref git) = &config.bootloader.git {
             cargo_toml_file.write_all(
                 format!(

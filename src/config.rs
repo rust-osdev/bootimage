@@ -17,7 +17,7 @@ pub struct BootloaderConfig {
     pub name: String,
     pub precompiled: bool,
     pub target: PathBuf,
-    pub version: Option<String>,
+    pub version: String,
     pub git: Option<String>,
     pub branch: Option<String>,
     pub path: Option<PathBuf>,
@@ -172,7 +172,7 @@ impl Into<BootloaderConfig> for BootloaderConfigBuilder {
             precompiled,
             target: self.target
                 .unwrap_or(PathBuf::from("x86_64-bootloader.json")),
-            version: self.version,
+            version: self.version.unwrap_or("0.2.0-alpha".into()),
             git: self.git,
             branch: self.branch,
             path: self.path,
