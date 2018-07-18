@@ -103,14 +103,6 @@ pub(crate) fn build_impl(
         .len();
     let kernel_info_block = create_kernel_info_block(kernel_size);
 
-    if args.update_bootloader() {
-        let mut bootloader_cargo_lock = PathBuf::from(out_dir);
-        bootloader_cargo_lock.push("bootloader");
-        bootloader_cargo_lock.push("Cargo.lock");
-
-        fs::remove_file(bootloader_cargo_lock).context("Failed to remove Cargo.lock")?;
-    }
-
     let bootloader = build_bootloader(&metadata, &config).context("Failed to build bootloader")?;
 
     create_disk_image(

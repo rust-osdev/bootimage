@@ -37,7 +37,6 @@ where
     let mut bin_name: Option<String> = None;
     let mut target: Option<String> = None;
     let mut release: Option<bool> = None;
-    let mut update_bootloader: Option<bool> = None;
     let mut cargo_args = Vec::new();
     let mut run_args = Vec::new();
     let mut run_args_started = false;
@@ -119,9 +118,6 @@ where
                     set(&mut release, Some(true));
                     cargo_args.push(arg);
                 }
-                "--update-bootloader" => {
-                    set(&mut update_bootloader, Some(true));
-                }
                 "--" => {
                     run_args_started = true;
                 }
@@ -139,7 +135,6 @@ where
         target,
         manifest_path,
         release: release.unwrap_or(false),
-        update_bootloader: update_bootloader.unwrap_or(false),
     })
 }
 
@@ -157,8 +152,6 @@ pub struct Args {
     target: Option<String>,
     /// The release flag (also present in `cargo_args`).
     release: bool,
-    /// Whether the bootloader should be updated (not present in `cargo_args`).
-    update_bootloader: bool,
 }
 
 impl Args {
@@ -176,10 +169,6 @@ impl Args {
 
     pub fn release(&self) -> bool {
         self.release
-    }
-
-    pub fn update_bootloader(&self) -> bool {
-        self.update_bootloader
     }
 
     pub fn set_target(&mut self, target: String) {
