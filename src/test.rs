@@ -2,6 +2,7 @@ use args::Args;
 use build;
 use failure::{Error, ResultExt};
 use std::io::Write;
+use std::path::Path;
 use std::time::Duration;
 use std::{fs, io, process};
 use wait_timeout::ChildExt;
@@ -30,12 +31,12 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
 
     let mut tests = Vec::new();
 
-    assert_eq!(
-        metadata.packages.len(),
-        1,
-        "Only crates with one package are supported"
-    );
-    let target_iter = metadata.packages[0].targets.iter();
+    let crate_metadata = metadata
+        .packages
+        .iter()
+        .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
+        .expect("Could not read crate name from cargo metadata");
+    let target_iter = crate_metadata.targets.iter();
     for target in target_iter.filter(|t| t.kind == ["bin"] && t.name.starts_with("test-")) {
         println!("{}", target.name);
 
