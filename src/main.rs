@@ -1,20 +1,19 @@
 extern crate byteorder;
 extern crate cargo_metadata;
-extern crate tempdir;
 extern crate toml;
-extern crate xmas_elf;
 extern crate wait_timeout;
+extern crate xmas_elf;
 #[macro_use]
 extern crate failure;
 
-use std::{io, process};
 use args::Args;
+use std::{io, process};
 
 mod args;
-mod config;
 mod build;
-mod test;
+mod config;
 mod help;
+mod test;
 
 enum Command {
     NoSubcommand,
