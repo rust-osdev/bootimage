@@ -10,6 +10,9 @@ repository = "https://github.com/rust-osdev/bootimage"
 byteorder = "1.2.1"
 toml = "0.4.5"
 xmas-elf = "0.6.1"
-cargo_metadata = "0.5.3"
 wait-timeout = "0.1"
 failure = "0.1.1"
+
+[dependencies.cargo_metadata]
+version = "0.5.3"
+default-features = false
