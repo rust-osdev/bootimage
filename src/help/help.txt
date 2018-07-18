@@ -13,9 +13,7 @@ OPTIONS:
     ---version      Prints version information and exit
 
 BUILD_OPTS:
-    --update-bootloader     Update the bootloader dependency.
-
-    Any additional options are directly passed to `cargo build` (see
+    Any options are directly passed to `cargo build` (see
     `cargo build --help` for possible options). After building, a bootloader
     is downloaded and built, and then combined with the kernel into a bootable
     disk image.
