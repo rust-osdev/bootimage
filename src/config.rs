@@ -14,7 +14,7 @@ pub struct Config {
 
 #[derive(Debug, Clone)]
 pub struct BootloaderConfig {
-    pub name: String,
+    pub name: Option<String>,
     pub target: PathBuf,
 }
 
@@ -156,7 +156,7 @@ impl Into<Config> for ConfigBuilder {
 impl Into<BootloaderConfig> for BootloaderConfigBuilder {
     fn into(self) -> BootloaderConfig {
         BootloaderConfig {
-            name: self.name.unwrap_or("bootloader".into()),
+            name: self.name,
             target: self.target
                 .unwrap_or(PathBuf::from("x86_64-bootloader.json")),
         }

@@ -207,7 +207,14 @@ fn create_kernel_info_block(kernel_size: u64) -> KernelInfoBlock {
 fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8]>, Error> {
     use std::io::Read;
 
-    let bootloader_metadata = match metadata.packages.iter().find(|p| p.name == "bootloader") {
+    let bootloader_metadata = metadata.packages.iter().find(|p| {
+        if let Some(name) = config.bootloader.name.as_ref() {
+            p.name == name.as_str()
+        } else {
+            p.name == "bootloader" || p.name == "bootloader_precompiled"
+        }
+    });
+    let bootloader_metadata = match bootloader_metadata {
         Some(package_metadata) => package_metadata.clone(),
         None => Err(format_err!("Bootloader dependency not found").context(
             "You need to add a dependency on the `bootloader` or `bootloader_precompiled` crates \
@@ -222,7 +229,11 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
     let mut bootloader_target_path = PathBuf::from(bootloader_dir);
     bootloader_target_path.push(&config.bootloader.target);
 
-    let bootloader_elf_path = {
+    let bootloader_elf_path = if bootloader_metadata.name == "bootloader_precompiled" {
+        let mut bootloader_elf_path = bootloader_dir.to_path_buf();
+        bootloader_elf_path.push("bootloader");
+        bootloader_elf_path
+    } else {
         let args = &[
             String::from("--manifest-path"),
             bootloader_metadata.manifest_path.clone(),
