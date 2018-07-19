@@ -30,7 +30,7 @@ enum Command {
 pub fn main() {
     use std::io::Write;
     if let Err(err) = run() {
-        writeln!(io::stderr(), "Error: {:?}", err).unwrap();
+        writeln!(io::stderr(), "Error: {}", err).unwrap();
         process::exit(1);
     }
 }

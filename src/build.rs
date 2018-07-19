@@ -6,7 +6,6 @@ use failure::{Error, ResultExt};
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 use std::{io, process};
 use xmas_elf;
 
@@ -134,13 +133,17 @@ fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Erro
 }
 
 #[derive(Debug, Fail)]
-#[fail(display = "Failed to execute `cargo metadata`")]
-pub struct CargoMetadataError(Mutex<cargo_metadata::Error>);
+#[fail(display = "{}", error)]
+pub struct CargoMetadataError {
+    error: String,
+}
 
 fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, Error> {
     let metadata =
         cargo_metadata::metadata_deps(args.manifest_path().as_ref().map(PathBuf::as_path), true)
-            .map_err(|e| CargoMetadataError(Mutex::new(e)))?;
+            .map_err(|e| CargoMetadataError {
+                error: format!("{}", e),
+            })?;
     Ok(metadata)
 }
 
