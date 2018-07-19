@@ -2,11 +2,11 @@ use args::{self, Args};
 use byteorder::{ByteOrder, LittleEndian};
 use cargo_metadata::{self, Metadata as CargoMetadata};
 use config::{self, Config};
-use failure::{Error, ResultExt};
+use failure::{self, Error, ResultExt};
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::{io, process};
+use std::{fmt, io, process};
 use xmas_elf;
 
 const BLOCK_SIZE: usize = 512;
@@ -132,11 +132,18 @@ fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Erro
     Ok(())
 }
 
-#[derive(Debug, Fail)]
-#[fail(display = "{}", error)]
+#[derive(Debug)]
 pub struct CargoMetadataError {
     error: String,
 }
+
+impl fmt::Display for CargoMetadataError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.error)
+    }
+}
+
+impl failure::Fail for CargoMetadataError {}
 
 fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, Error> {
     let metadata =

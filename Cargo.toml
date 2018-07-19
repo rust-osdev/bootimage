@@ -11,8 +11,12 @@ byteorder = "1.2.1"
 toml = "0.4.5"
 xmas-elf = "0.6.1"
 wait-timeout = "0.1"
-failure = "0.1.1"
 
 [dependencies.cargo_metadata]
 version = "0.5.3"
 default-features = false
+
+[dependencies.failure]
+version = "0.1.1"
+default-features = false
+features = ["std"]
