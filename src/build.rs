@@ -209,7 +209,11 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
 
     let bootloader_metadata = match metadata.packages.iter().find(|p| p.name == "bootloader") {
         Some(package_metadata) => package_metadata.clone(),
-        None => Err(format_err!("Bootloader dependency not found"))?,
+        None => Err(format_err!("Bootloader dependency not found").context(
+            "You need to add a dependency on the `bootloader` or `bootloader_precompiled` crates \
+             in your Cargo.toml.\n\nIn case you just updated bootimage from an earlier version, \
+             check out the migration guide at https://github.com/rust-osdev/bootimage/pull/16",
+        ))?,
     };
     let bootloader_dir = Path::new(&bootloader_metadata.manifest_path)
         .parent()

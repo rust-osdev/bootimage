@@ -73,6 +73,10 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                             "the \
                              `package.metadata.bootimage.bootloader` key `{}` was deprecated",
                             k
+                        ).context(
+                            "In case you just updated bootimage from an earlier version, \
+                             check out the migration guide at \
+                             https://github.com/rust-osdev/bootimage/pull/16",
                         ))?,
                         (key, value) => Err(format_err!(
                             "unexpected \
