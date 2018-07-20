@@ -1,10 +1,11 @@
-use std::{fs, io, process};
-use failure::{Error, ResultExt};
 use args::Args;
 use build;
-use wait_timeout::ChildExt;
-use std::time::Duration;
+use failure::{Error, ResultExt};
 use std::io::Write;
+use std::path::Path;
+use std::time::Duration;
+use std::{fs, io, process};
+use wait_timeout::ChildExt;
 
 pub(crate) fn test(args: Args) -> Result<(), Error> {
     let (args, config, metadata, root_dir, out_dir) = build::common_setup(args)?;
@@ -30,14 +31,25 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
 
     let mut tests = Vec::new();
 
-    assert_eq!(metadata.packages.len(), 1, "Only crates with one package are supported");
-    let target_iter = metadata.packages[0].targets.iter();
+    let crate_metadata = metadata
+        .packages
+        .iter()
+        .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
+        .expect("Could not read crate name from cargo metadata");
+    let target_iter = crate_metadata.targets.iter();
     for target in target_iter.filter(|t| t.kind == ["bin"] && t.name.starts_with("test-")) {
         println!("{}", target.name);
 
         let mut target_args = test_args.clone();
         target_args.set_bin_name(target.name.clone());
-        let test_path = build::build_impl(&target_args, &test_config, &metadata, &root_dir, &out_dir, false)?;
+        let test_path = build::build_impl(
+            &target_args,
+            &test_config,
+            &metadata,
+            &root_dir,
+            &out_dir,
+            false,
+        )?;
 
         let test_result;
         let output_file = format!("{}-output.txt", test_path.display());
@@ -52,10 +64,14 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         command.arg("-serial");
         command.arg(format!("file:{}", output_file));
         command.stderr(process::Stdio::null());
-        let mut child = command.spawn()
+        let mut child = command
+            .spawn()
             .context(format_err!("Failed to launch QEMU: {:?}", command))?;
         let timeout = Duration::from_secs(60);
-        match child.wait_timeout(timeout).context("Failed to wait with timeout")? {
+        match child
+            .wait_timeout(timeout)
+            .context("Failed to wait with timeout")?
+        {
             None => {
                 child.kill().context("Failed to kill QEMU")?;
                 child.wait().context("Failed to wait for QEMU process")?;
@@ -63,8 +79,10 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
                 writeln!(io::stderr(), "Timed Out")?;
             }
             Some(_) => {
-                let output = fs::read_to_string(&output_file)
-                    .context(format_err!("Failed to read test output file {}", output_file))?;
+                let output = fs::read_to_string(&output_file).context(format_err!(
+                    "Failed to read test output file {}",
+                    output_file
+                ))?;
                 if output.starts_with("ok\n") {
                     test_result = TestResult::Ok;
                     println!("Ok");
@@ -81,7 +99,7 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
                         writeln!(io::stderr(), "    {}", line)?;
                     }
                 }
-            },
+            }
         }
         println!("");
 

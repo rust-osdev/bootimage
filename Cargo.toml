@@ -3,14 +3,20 @@ authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 description = "Tool to create a bootable OS image from a kernel binary."
 license = "MIT/Apache-2.0"
 name = "bootimage"
-version = "0.4.4"
+version = "0.5.0-beta.1"
 repository = "https://github.com/rust-osdev/bootimage"
 
 [dependencies]
 byteorder = "1.2.1"
 toml = "0.4.5"
 xmas-elf = "0.6.1"
-cargo_metadata = "0.5.3"
-tempdir = "0.3.7"
 wait-timeout = "0.1"
-failure = "0.1.1"
+
+[dependencies.cargo_metadata]
+version = "0.5.3"
+default-features = false
+
+[dependencies.failure]
+version = "0.1.1"
+default-features = false
+features = ["std"]

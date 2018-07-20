@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
 use failure::{Error, ResultExt};
+use std::path::PathBuf;
 use toml::Value;
 
 #[derive(Debug, Clone)]
@@ -14,22 +14,21 @@ pub struct Config {
 
 #[derive(Debug, Clone)]
 pub struct BootloaderConfig {
-    pub name: String,
-    pub precompiled: bool,
+    pub name: Option<String>,
     pub target: PathBuf,
-    pub version: String,
-    pub git: Option<String>,
-    pub branch: Option<String>,
-    pub path: Option<PathBuf>,
 }
 
 pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
     use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
-        File::open(&manifest_path).context("Failed to open Cargo.toml")?
-            .read_to_string(&mut content).context("Failed to read Cargo.toml")?;
-        content.parse::<Value>().context("Failed to parse Cargo.toml")?
+        File::open(&manifest_path)
+            .context("Failed to open Cargo.toml")?
+            .read_to_string(&mut content)
+            .context("Failed to read Cargo.toml")?;
+        content
+            .parse::<Value>()
+            .context("Failed to parse Cargo.toml")?
     };
 
     let metadata = cargo_toml
@@ -63,22 +62,27 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 for (key, value) in t {
                     match (key.as_str(), value) {
                         ("name", Value::String(s)) => bootloader_config.name = From::from(s),
-                        ("precompiled", Value::Boolean(b)) => {
-                            bootloader_config.precompiled = From::from(b)
-                        }
                         ("target", Value::String(s)) => {
                             bootloader_config.target = Some(PathBuf::from(s))
                         }
-                        ("version", Value::String(s)) => bootloader_config.version = From::from(s),
-                        ("git", Value::String(s)) => bootloader_config.git = From::from(s),
-                        ("branch", Value::String(s)) => bootloader_config.branch = From::from(s),
-                        ("path", Value::String(s)) => {
-                            bootloader_config.path = Some(Path::new(&s).canonicalize()?);
-                        }
+                        (k @ "precompiled", _)
+                        | (k @ "version", _)
+                        | (k @ "git", _)
+                        | (k @ "branch", _)
+                        | (k @ "path", _) => Err(format_err!(
+                            "the \
+                             `package.metadata.bootimage.bootloader` key `{}` was deprecated",
+                            k
+                        ).context(
+                            "In case you just updated bootimage from an earlier version, \
+                             check out the migration guide at \
+                             https://github.com/rust-osdev/bootimage/pull/16",
+                        ))?,
                         (key, value) => Err(format_err!(
                             "unexpected \
                              `package.metadata.bootimage.bootloader` key `{}` with value `{}`",
-                            key, value
+                            key,
+                            value
                         ))?,
                     }
                 }
@@ -100,9 +104,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 for value in array {
                     match value {
                         Value::String(s) => command.push(s),
-                        _ => Err(format_err!(
-                            "run-command must be a list of strings"
-                        ))?,
+                        _ => Err(format_err!("run-command must be a list of strings"))?,
                     }
                 }
                 config.run_command = Some(command);
@@ -110,7 +112,8 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
             (key, value) => Err(format_err!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
-                key, value
+                key,
+                value
             ))?,
         }
     }
@@ -130,25 +133,16 @@ struct ConfigBuilder {
 #[derive(Default)]
 struct BootloaderConfigBuilder {
     name: Option<String>,
-    precompiled: Option<bool>,
     target: Option<PathBuf>,
-    version: Option<String>,
-    branch: Option<String>,
-    git: Option<String>,
-    path: Option<PathBuf>,
 }
 
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
-        let default_bootloader_config = BootloaderConfigBuilder {
-            precompiled: Some(true),
-            ..Default::default()
-        };
         Config {
             manifest_path: self.manifest_path.expect("manifest path must be set"),
             default_target: self.default_target,
             output: self.output,
-            bootloader: self.bootloader.unwrap_or(default_bootloader_config).into(),
+            bootloader: self.bootloader.unwrap_or_default().into(),
             minimum_image_size: self.minimum_image_size,
             run_command: self.run_command.unwrap_or(vec![
                 "qemu-system-x86_64".into(),
@@ -161,21 +155,10 @@ impl Into<Config> for ConfigBuilder {
 
 impl Into<BootloaderConfig> for BootloaderConfigBuilder {
     fn into(self) -> BootloaderConfig {
-        let precompiled = self.precompiled.unwrap_or(false);
-        let default_name = if precompiled {
-            "bootloader_precompiled"
-        } else {
-            "bootloader"
-        };
         BootloaderConfig {
-            name: self.name.unwrap_or(default_name.into()),
-            precompiled,
+            name: self.name,
             target: self.target
                 .unwrap_or(PathBuf::from("x86_64-bootloader.json")),
-            version: self.version.unwrap_or("0.2.0-alpha".into()),
-            git: self.git,
-            branch: self.branch,
-            path: self.path,
         }
     }
 }

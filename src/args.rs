@@ -1,5 +1,5 @@
-use std::{env, mem};
 use std::path::{Path, PathBuf};
+use std::{env, mem};
 use Command;
 
 pub(crate) fn parse_args() -> Command {
@@ -14,9 +14,12 @@ pub(crate) fn parse_args() -> Command {
         },
         Some("test") => match parse_build_args(args) {
             Command::Build(args) => {
-                assert_eq!(args.bin_name, None, "No `--bin` argument allowed for `bootimage test`");
+                assert_eq!(
+                    args.bin_name, None,
+                    "No `--bin` argument allowed for `bootimage test`"
+                );
                 Command::Test(args)
-            },
+            }
             Command::BuildHelp => Command::TestHelp,
             cmd => cmd,
         },
@@ -34,7 +37,6 @@ where
     let mut bin_name: Option<String> = None;
     let mut target: Option<String> = None;
     let mut release: Option<bool> = None;
-    let mut update_bootloader: Option<bool> = None;
     let mut cargo_args = Vec::new();
     let mut run_args = Vec::new();
     let mut run_args_started = false;
@@ -92,9 +94,14 @@ where
                 }
                 "--manifest-path" => {
                     let next = arg_iter.next();
-                    set(&mut manifest_path, next.as_ref().map(|p| {
-                        Path::new(&p).canonicalize().expect("--manifest-path invalid")
-                    }));
+                    set(
+                        &mut manifest_path,
+                        next.as_ref().map(|p| {
+                            Path::new(&p)
+                                .canonicalize()
+                                .expect("--manifest-path invalid")
+                        }),
+                    );
                     cargo_args.push(arg);
                     if let Some(next) = next {
                         cargo_args.push(next);
@@ -102,16 +109,14 @@ where
                 }
                 _ if arg.starts_with("--manifest-path=") => {
                     let path = Path::new(arg.trim_left_matches("--manifest-path="))
-                        .canonicalize().expect("--manifest-path invalid");
+                        .canonicalize()
+                        .expect("--manifest-path invalid");
                     set(&mut manifest_path, Some(path));
                     cargo_args.push(arg);
                 }
                 "--release" => {
                     set(&mut release, Some(true));
                     cargo_args.push(arg);
-                }
-                "--update-bootloader" => {
-                    set(&mut update_bootloader, Some(true));
                 }
                 "--" => {
                     run_args_started = true;
@@ -130,7 +135,6 @@ where
         target,
         manifest_path,
         release: release.unwrap_or(false),
-        update_bootloader: update_bootloader.unwrap_or(false),
     })
 }
 
@@ -148,8 +152,6 @@ pub struct Args {
     target: Option<String>,
     /// The release flag (also present in `cargo_args`).
     release: bool,
-    /// Whether the bootloader should be updated (not present in `cargo_args`).
-    update_bootloader: bool,
 }
 
 impl Args {
@@ -167,10 +169,6 @@ impl Args {
 
     pub fn release(&self) -> bool {
         self.release
-    }
-
-    pub fn update_bootloader(&self) -> bool {
-        self.update_bootloader
     }
 
     pub fn set_target(&mut self, target: String) {
