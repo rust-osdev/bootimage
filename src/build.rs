@@ -235,7 +235,7 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
             in your Cargo.toml.\n\nIn case you just updated bootimage from an earlier version, \
             check out the migration guide at https://github.com/rust-osdev/bootimage/pull/16. \
             Alternatively, you can downgrade to bootimage 0.4 again by executing \
-            `cargo install bootimage --version {} --force`.", r#"^0.4""#
+            `cargo install bootimage --version {} --force`.", r#""^0.4""#
         ))?,
         };
     let bootloader_dir = Path::new(&bootloader_metadata.manifest_path)
