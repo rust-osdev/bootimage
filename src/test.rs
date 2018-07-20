@@ -66,23 +66,26 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         command.stderr(process::Stdio::null());
         let mut child = command
             .spawn()
-            .context(format_err!("Failed to launch QEMU: {:?}", command))?;
+            .with_context(|e| format_err!("Failed to launch QEMU: {:?}\n{}", command, e))?;
         let timeout = Duration::from_secs(60);
         match child
             .wait_timeout(timeout)
-            .context("Failed to wait with timeout")?
+            .with_context(|e| format!("Failed to wait with timeout: {}", e))?
         {
             None => {
-                child.kill().context("Failed to kill QEMU")?;
-                child.wait().context("Failed to wait for QEMU process")?;
+                child
+                    .kill()
+                    .with_context(|e| format!("Failed to kill QEMU: {}", e))?;
+                child
+                    .wait()
+                    .with_context(|e| format!("Failed to wait for QEMU process: {}", e))?;
                 test_result = TestResult::TimedOut;
                 writeln!(io::stderr(), "Timed Out")?;
             }
             Some(_) => {
-                let output = fs::read_to_string(&output_file).context(format_err!(
-                    "Failed to read test output file {}",
-                    output_file
-                ))?;
+                let output = fs::read_to_string(&output_file).with_context(|e| {
+                    format_err!("Failed to read test output file {}: {}", output_file, e)
+                })?;
                 if output.starts_with("ok\n") {
                     test_result = TestResult::Ok;
                     println!("Ok");

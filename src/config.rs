@@ -23,12 +23,12 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
     let cargo_toml: Value = {
         let mut content = String::new();
         File::open(&manifest_path)
-            .context("Failed to open Cargo.toml")?
+            .with_context(|e| format!("Failed to open Cargo.toml: {}", e))?
             .read_to_string(&mut content)
-            .context("Failed to read Cargo.toml")?;
+            .with_context(|e| format!("Failed to read Cargo.toml: {}", e))?;
         content
             .parse::<Value>()
-            .context("Failed to parse Cargo.toml")?
+            .with_context(|e| format!("Failed to parse Cargo.toml: {}", e))?
     };
 
     let metadata = cargo_toml
@@ -71,12 +71,11 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         | (k @ "branch", _)
                         | (k @ "path", _) => Err(format_err!(
                             "the \
-                             `package.metadata.bootimage.bootloader` key `{}` was deprecated",
-                            k
-                        ).context(
-                            "In case you just updated bootimage from an earlier version, \
+                             `package.metadata.bootimage.bootloader` key `{}` was deprecated\n\n\
+                             In case you just updated bootimage from an earlier version, \
                              check out the migration guide at \
-                             https://github.com/rust-osdev/bootimage/pull/16",
+                             https://github.com/rust-osdev/bootimage/pull/16.",
+                            k
                         ))?,
                         (key, value) => Err(format_err!(
                             "unexpected \

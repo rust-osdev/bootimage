@@ -98,11 +98,12 @@ pub(crate) fn build_impl(
 
     let kernel_size = kernel
         .metadata()
-        .context("Failed to read kernel output file")?
+        .with_context(|e| format!("Failed to read kernel output file: {}", e))?
         .len();
     let kernel_info_block = create_kernel_info_block(kernel_size);
 
-    let bootloader = build_bootloader(&metadata, &config).context("Failed to build bootloader")?;
+    let bootloader = build_bootloader(&metadata, &config)
+        .with_context(|e| format!("Failed to build bootloader: {}", e))?;
 
     create_disk_image(
         root_dir,
@@ -128,7 +129,7 @@ fn run_impl(args: &Args, config: &Config, output_path: &Path) -> Result<(), Erro
     command.args(&args.run_args);
     command
         .status()
-        .context(format_err!("Failed to execute run command: {:?}", command))?;
+        .with_context(|e| format!("Failed to execute run `{:?}`: {}", command, e))?;
     Ok(())
 }
 
@@ -164,14 +165,16 @@ fn build_kernel(
     if verbose {
         println!("Building kernel");
     }
-    let exit_status = run_xbuild(&args.cargo_args).context("Failed to run `cargo xbuild`")?;
+    let exit_status = run_xbuild(&args.cargo_args)
+        .with_context(|e| format!("Failed to run `cargo xbuild`: {}", e))?;
     if !exit_status.success() {
         process::exit(1)
     }
 
     let mut kernel_path = out_dir.to_owned();
     kernel_path.push(bin_name);
-    let kernel = File::open(kernel_path).context("Failed to open kernel output file")?;
+    let kernel = File::open(kernel_path)
+        .with_context(|e| format!("Failed to open kernel output file: {}", e))?;
     Ok(kernel)
 }
 
@@ -224,14 +227,17 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
             p.name == "bootloader" || p.name == "bootloader_precompiled"
         }
     });
-    let bootloader_metadata = match bootloader_metadata {
-        Some(package_metadata) => package_metadata.clone(),
-        None => Err(format_err!("Bootloader dependency not found").context(
-            "You need to add a dependency on the `bootloader` or `bootloader_precompiled` crates \
-             in your Cargo.toml.\n\nIn case you just updated bootimage from an earlier version, \
-             check out the migration guide at https://github.com/rust-osdev/bootimage/pull/16",
+    let bootloader_metadata =
+        match bootloader_metadata {
+            Some(package_metadata) => package_metadata.clone(),
+            None => Err(format_err!("Bootloader dependency not found\n\n\
+            You need to add a dependency on the `bootloader` or `bootloader_precompiled` crates \
+            in your Cargo.toml.\n\nIn case you just updated bootimage from an earlier version, \
+            check out the migration guide at https://github.com/rust-osdev/bootimage/pull/16. \
+            Alternatively, you can downgrade to bootimage 0.4 again by executing \
+            `cargo install bootimage --version {} --force`.", r#"^0.4""#
         ))?,
-    };
+        };
     let bootloader_dir = Path::new(&bootloader_metadata.manifest_path)
         .parent()
         .unwrap();
@@ -253,7 +259,8 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
         ];
 
         println!("Building bootloader v{}", bootloader_metadata.version);
-        let exit_status = run_xbuild(args).context("Failed to run `cargo xbuild`")?;
+        let exit_status =
+            run_xbuild(args).with_context(|e| format!("Failed to run `cargo xbuild`: {}", e))?;
         if !exit_status.success() {
             process::exit(1)
         }
@@ -267,10 +274,11 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
     };
 
     let mut bootloader_elf_bytes = Vec::new();
-    let mut bootloader = File::open(&bootloader_elf_path).context("Could not open bootloader")?;
+    let mut bootloader = File::open(&bootloader_elf_path)
+        .with_context(|e| format!("Could not open bootloader: {}", e))?;
     bootloader
         .read_to_end(&mut bootloader_elf_bytes)
-        .context("Could not read bootloader")?;
+        .with_context(|e| format!("Could not read bootloader: {}", e))?;
 
     // copy bootloader section of ELF file to bootloader_path
     let elf_file = xmas_elf::ElfFile::new(&bootloader_elf_bytes).unwrap();
@@ -311,13 +319,14 @@ fn create_disk_image(
                 .display()
         );
     }
-    let mut output = File::create(&output_path).context("Could not create output bootimage file")?;
+    let mut output = File::create(&output_path)
+        .with_context(|e| format!("Could not create output bootimage file: {}", e))?;
     output
         .write_all(&bootloader_data)
-        .context("Could not write output bootimage file")?;
+        .with_context(|e| format!("Could not write output bootimage file: {}", e))?;
     output
         .write_all(&kernel_info_block)
-        .context("Could not write output bootimage file")?;
+        .with_context(|e| format!("Could not write output bootimage file: {}", e))?;
 
     // write out kernel elf file
     let kernel_size = kernel.metadata()?.len();
@@ -338,7 +347,7 @@ fn create_disk_image(
     let padding = [0u8; 512];
     output
         .write_all(&padding[..padding_size])
-        .context("Could not write output bootimage file")?;
+        .with_context(|e| format!("Could not write output bootimage file: {}", e))?;
 
     if let Some(min_size) = config.minimum_image_size {
         // we already wrote to output successfully,
