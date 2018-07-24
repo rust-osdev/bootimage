@@ -256,6 +256,12 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
             String::from("--target"),
             bootloader_target_path.display().to_string(),
             String::from("--release"),
+            String::from("--features"),
+            config
+                .bootloader
+                .features
+                .iter()
+                .fold(String::new(), |i, j| i + " " + j),
         ];
 
         println!("Building bootloader v{}", bootloader_metadata.version);

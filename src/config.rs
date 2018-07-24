@@ -16,6 +16,7 @@ pub struct Config {
 pub struct BootloaderConfig {
     pub name: Option<String>,
     pub target: PathBuf,
+    pub features: Vec<String>,
 }
 
 pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
@@ -48,8 +49,48 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
         ))?,
     };
 
+    /*
+     * The user shouldn't specify any features if they're using a precompiled bootloader, as we
+     * don't actually compile it.
+     */
+    if cargo_toml
+        .get("dependencies")
+        .and_then(|table| table.get("bootloader_precompiled"))
+        .and_then(|table| table.get("features"))
+        .is_some()
+    {
+        return Err(format_err!(
+            "Can't change features of precompiled bootloader!"
+        ));
+    }
+
+    let bootloader_features = match cargo_toml
+        .get("dependencies")
+        .and_then(|table| table.get("bootloader"))
+        .and_then(|table| table.get("features"))
+    {
+        None => None,
+        Some(Value::Array(array)) => {
+            let mut features = Vec::new();
+
+            for feature_string in array {
+                match feature_string {
+                    Value::String(feature) => features.push(feature.clone()),
+                    _ => return Err(format_err!("Bootloader features are malformed!")),
+                }
+            }
+
+            Some(features)
+        }
+        Some(_) => return Err(format_err!("Bootloader features are malformed!")),
+    };
+
     let mut config = ConfigBuilder {
         manifest_path: Some(manifest_path),
+        bootloader: BootloaderConfigBuilder {
+            features: bootloader_features,
+            ..Default::default()
+        },
         ..Default::default()
     };
 
@@ -58,12 +99,11 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
             ("default-target", Value::String(s)) => config.default_target = From::from(s),
             ("output", Value::String(s)) => config.output = Some(PathBuf::from(s)),
             ("bootloader", Value::Table(t)) => {
-                let mut bootloader_config = BootloaderConfigBuilder::default();
                 for (key, value) in t {
                     match (key.as_str(), value) {
-                        ("name", Value::String(s)) => bootloader_config.name = From::from(s),
+                        ("name", Value::String(s)) => config.bootloader.name = From::from(s),
                         ("target", Value::String(s)) => {
-                            bootloader_config.target = Some(PathBuf::from(s))
+                            config.bootloader.target = Some(PathBuf::from(s))
                         }
                         (k @ "precompiled", _)
                         | (k @ "version", _)
@@ -85,7 +125,6 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                         ))?,
                     }
                 }
-                config.bootloader = Some(bootloader_config);
             }
             ("minimum-image-size", Value::Integer(x)) => {
                 if x >= 0 {
@@ -124,7 +163,7 @@ struct ConfigBuilder {
     manifest_path: Option<PathBuf>,
     default_target: Option<String>,
     output: Option<PathBuf>,
-    bootloader: Option<BootloaderConfigBuilder>,
+    bootloader: BootloaderConfigBuilder,
     minimum_image_size: Option<u64>,
     run_command: Option<Vec<String>>,
 }
@@ -133,6 +172,7 @@ struct ConfigBuilder {
 struct BootloaderConfigBuilder {
     name: Option<String>,
     target: Option<PathBuf>,
+    features: Option<Vec<String>>,
 }
 
 impl Into<Config> for ConfigBuilder {
@@ -141,7 +181,7 @@ impl Into<Config> for ConfigBuilder {
             manifest_path: self.manifest_path.expect("manifest path must be set"),
             default_target: self.default_target,
             output: self.output,
-            bootloader: self.bootloader.unwrap_or_default().into(),
+            bootloader: self.bootloader.into(),
             minimum_image_size: self.minimum_image_size,
             run_command: self.run_command.unwrap_or(vec![
                 "qemu-system-x86_64".into(),
@@ -156,8 +196,10 @@ impl Into<BootloaderConfig> for BootloaderConfigBuilder {
     fn into(self) -> BootloaderConfig {
         BootloaderConfig {
             name: self.name,
-            target: self.target
+            target: self
+                .target
                 .unwrap_or(PathBuf::from("x86_64-bootloader.json")),
+            features: self.features.unwrap_or(Vec::with_capacity(0)),
         }
     }
 }
