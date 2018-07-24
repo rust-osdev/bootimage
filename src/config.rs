@@ -16,6 +16,7 @@ pub struct Config {
 pub struct BootloaderConfig {
     pub name: Option<String>,
     pub target: PathBuf,
+    pub default_features: bool,
     pub features: Vec<String>,
 }
 
@@ -56,13 +57,31 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
     if cargo_toml
         .get("dependencies")
         .and_then(|table| table.get("bootloader_precompiled"))
-        .and_then(|table| table.get("features"))
+        .and_then(|table| {
+            table
+                .get("features")
+                .or_else(|| table.get("default-features"))
+        })
         .is_some()
     {
         return Err(format_err!(
             "Can't change features of precompiled bootloader!"
         ));
     }
+
+    let bootloader_dependency = cargo_toml
+        .get("dependencies")
+        .and_then(|table| table.get("bootloader"));
+    let bootloader_default_features =
+        match bootloader_dependency.and_then(|table| table.get("default-features")) {
+            None => None,
+            Some(Value::Boolean(default_features)) => Some(*default_features),
+            Some(_) => {
+                return Err(format_err!(
+                    "Bootloader 'default-features' field should be a bool!"
+                ))
+            }
+        };
 
     let bootloader_features = match cargo_toml
         .get("dependencies")
@@ -89,6 +108,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
         manifest_path: Some(manifest_path),
         bootloader: BootloaderConfigBuilder {
             features: bootloader_features,
+            default_features: bootloader_default_features,
             ..Default::default()
         },
         ..Default::default()
@@ -173,6 +193,7 @@ struct BootloaderConfigBuilder {
     name: Option<String>,
     target: Option<PathBuf>,
     features: Option<Vec<String>>,
+    default_features: Option<bool>,
 }
 
 impl Into<Config> for ConfigBuilder {
@@ -200,6 +221,7 @@ impl Into<BootloaderConfig> for BootloaderConfigBuilder {
                 .target
                 .unwrap_or(PathBuf::from("x86_64-bootloader.json")),
             features: self.features.unwrap_or(Vec::with_capacity(0)),
+            default_features: self.default_features.unwrap_or(true),
         }
     }
 }

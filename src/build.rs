@@ -250,7 +250,7 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
         bootloader_elf_path.push("bootloader");
         bootloader_elf_path
     } else {
-        let args = &[
+        let mut args = vec![
             String::from("--manifest-path"),
             bootloader_metadata.manifest_path.clone(),
             String::from("--target"),
@@ -264,9 +264,13 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
                 .fold(String::new(), |i, j| i + " " + j),
         ];
 
+        if !config.bootloader.default_features {
+            args.push(String::from("--no-default-features"));
+        }
+
         println!("Building bootloader v{}", bootloader_metadata.version);
         let exit_status =
-            run_xbuild(args).with_context(|e| format!("Failed to run `cargo xbuild`: {}", e))?;
+            run_xbuild(&args).with_context(|e| format!("Failed to run `cargo xbuild`: {}", e))?;
         if !exit_status.success() {
             process::exit(1)
         }
