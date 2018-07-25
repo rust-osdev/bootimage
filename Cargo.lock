@@ -21,7 +21,7 @@ dependencies = [
 
 [[package]]
 name = "bootimage"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "byteorder 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "cargo_metadata 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
