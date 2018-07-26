@@ -147,6 +147,7 @@ impl fmt::Display for CargoMetadataError {
 impl failure::Fail for CargoMetadataError {}
 
 fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, Error> {
+    run_cargo_fetch();
     let metadata =
         cargo_metadata::metadata_deps(args.manifest_path().as_ref().map(PathBuf::as_path), true)
             .map_err(|e| CargoMetadataError {
@@ -202,6 +203,14 @@ fn run_xbuild(args: &[String]) -> io::Result<process::ExitStatus> {
     }
 
     Ok(exit_status)
+}
+
+fn run_cargo_fetch() {
+    let mut command = process::Command::new("cargo");
+    command.arg("fetch");
+    if !command.status().map(|s| s.success()).unwrap_or(false) {
+        process::exit(1);
+    }
 }
 
 fn create_kernel_info_block(kernel_size: u64) -> KernelInfoBlock {
