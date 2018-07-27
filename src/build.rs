@@ -433,13 +433,6 @@ fn create_disk_image(
         Ok(acc)
     }
 
-    // fn pad_file_512(output: &mut File, written_size: usize) -> Result<(), Error> {
-    //     let padding_size = (512 - (written_size % 512)) % 512;
-    //     let padding = [0u8; 512];
-    //     output.write_all(&padding[..padding_size]).context("Could not write to output file")?;
-    //     Ok(())
-    // }
-
     fn pad_file(output: &mut File, written_size: usize, padding: &[u8]) -> Result<(), Error> {
         let padding_size = (padding.len() - (written_size % padding.len())) % padding.len();
         output.write_all(&padding[..padding_size]).context("Could not write to output file")?;
@@ -457,24 +450,6 @@ fn create_disk_image(
         let package_size = write_file_to_file(&mut output, package)?;
         pad_file(&mut output, package_size, &[0; 512])?;
     }
-
-    // let kernel_size = kernel.metadata()?.len();
-    // let mut buffer = [0u8; 1024];
-    // loop {
-    //     let (n, interrupted) = match kernel.read(&mut buffer) {
-    //         Ok(0) => break,
-    //         Ok(n) => (n, false),
-    //         Err(ref e) if e.kind() == io::ErrorKind::Interrupted => (0, true),
-    //         Err(e) => Err(e)?,
-    //     };
-    //     if !interrupted {
-    //         output.write_all(&buffer[..n])?
-    //     }
-    // }
-
-    // let padding_size = (512 - (kernel_size % 512)) % 512;
-    // let padding = [0u8; 512];
-    // output.write_all(&padding[..padding_size]).context("Could not write output bootimage file")?;
 
     if let Some(min_size) = config.minimum_image_size {
         // we already wrote to output successfully,
