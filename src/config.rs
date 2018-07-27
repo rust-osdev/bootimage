@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
 use failure::{Error, ResultExt};
+use std::path::PathBuf;
 use toml::Value;
 
 #[derive(Debug, Clone)]
@@ -15,22 +15,23 @@ pub struct Config {
 
 #[derive(Debug, Clone)]
 pub struct BootloaderConfig {
-    pub name: String,
-    pub precompiled: bool,
+    pub name: Option<String>,
     pub target: PathBuf,
-    pub version: Option<String>,
-    pub git: Option<String>,
-    pub branch: Option<String>,
-    pub path: Option<PathBuf>,
+    pub default_features: bool,
+    pub features: Vec<String>,
 }
 
 pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
     use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
-        File::open(&manifest_path).context("Failed to open Cargo.toml")?
-            .read_to_string(&mut content).context("Failed to read Cargo.toml")?;
-        content.parse::<Value>().context("Failed to parse Cargo.toml")?
+        File::open(&manifest_path)
+            .with_context(|e| format!("Failed to open Cargo.toml: {}", e))?
+            .read_to_string(&mut content)
+            .with_context(|e| format!("Failed to read Cargo.toml: {}", e))?;
+        content
+            .parse::<Value>()
+            .with_context(|e| format!("Failed to parse Cargo.toml: {}", e))?
     };
 
     let metadata = cargo_toml
@@ -50,8 +51,67 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
         ))?,
     };
 
+    /*
+     * The user shouldn't specify any features if they're using a precompiled bootloader, as we
+     * don't actually compile it.
+     */
+    if cargo_toml
+        .get("dependencies")
+        .and_then(|table| table.get("bootloader_precompiled"))
+        .and_then(|table| {
+            table
+                .get("features")
+                .or_else(|| table.get("default-features"))
+        })
+        .is_some()
+    {
+        return Err(format_err!(
+            "Can't change features of precompiled bootloader!"
+        ));
+    }
+
+    let bootloader_dependency = cargo_toml
+        .get("dependencies")
+        .and_then(|table| table.get("bootloader"));
+    let bootloader_default_features =
+        match bootloader_dependency.and_then(|table| table.get("default-features")) {
+            None => None,
+            Some(Value::Boolean(default_features)) => Some(*default_features),
+            Some(_) => {
+                return Err(format_err!(
+                    "Bootloader 'default-features' field should be a bool!"
+                ))
+            }
+        };
+
+    let bootloader_features = match cargo_toml
+        .get("dependencies")
+        .and_then(|table| table.get("bootloader"))
+        .and_then(|table| table.get("features"))
+    {
+        None => None,
+        Some(Value::Array(array)) => {
+            let mut features = Vec::new();
+
+            for feature_string in array {
+                match feature_string {
+                    Value::String(feature) => features.push(feature.clone()),
+                    _ => return Err(format_err!("Bootloader features are malformed!")),
+                }
+            }
+
+            Some(features)
+        }
+        Some(_) => return Err(format_err!("Bootloader features are malformed!")),
+    };
+
     let mut config = ConfigBuilder {
         manifest_path: Some(manifest_path),
+        bootloader: BootloaderConfigBuilder {
+            features: bootloader_features,
+            default_features: bootloader_default_features,
+            ..Default::default()
+        },
         ..Default::default()
     };
 
@@ -60,30 +120,32 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
             ("default-target", Value::String(s)) => config.default_target = From::from(s),
             ("output", Value::String(s)) => config.output = Some(PathBuf::from(s)),
             ("bootloader", Value::Table(t)) => {
-                let mut bootloader_config = BootloaderConfigBuilder::default();
                 for (key, value) in t {
                     match (key.as_str(), value) {
-                        ("name", Value::String(s)) => bootloader_config.name = From::from(s),
-                        ("precompiled", Value::Boolean(b)) => {
-                            bootloader_config.precompiled = From::from(b)
-                        }
+                        ("name", Value::String(s)) => config.bootloader.name = From::from(s),
                         ("target", Value::String(s)) => {
-                            bootloader_config.target = Some(PathBuf::from(s))
+                            config.bootloader.target = Some(PathBuf::from(s))
                         }
-                        ("version", Value::String(s)) => bootloader_config.version = From::from(s),
-                        ("git", Value::String(s)) => bootloader_config.git = From::from(s),
-                        ("branch", Value::String(s)) => bootloader_config.branch = From::from(s),
-                        ("path", Value::String(s)) => {
-                            bootloader_config.path = Some(Path::new(&s).canonicalize()?);
-                        }
+                        (k @ "precompiled", _)
+                        | (k @ "version", _)
+                        | (k @ "git", _)
+                        | (k @ "branch", _)
+                        | (k @ "path", _) => Err(format_err!(
+                            "the \
+                             `package.metadata.bootimage.bootloader` key `{}` was deprecated\n\n\
+                             In case you just updated bootimage from an earlier version, \
+                             check out the migration guide at \
+                             https://github.com/rust-osdev/bootimage/pull/16.",
+                            k
+                        ))?,
                         (key, value) => Err(format_err!(
                             "unexpected \
                              `package.metadata.bootimage.bootloader` key `{}` with value `{}`",
-                            key, value
+                            key,
+                            value
                         ))?,
                     }
                 }
-                config.bootloader = Some(bootloader_config);
             }
             ("minimum-image-size", Value::Integer(x)) => {
                 if x >= 0 {
@@ -101,9 +163,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 for value in array {
                     match value {
                         Value::String(s) => command.push(s),
-                        _ => Err(format_err!(
-                            "run-command must be a list of strings"
-                        ))?,
+                        _ => Err(format_err!("run-command must be a list of strings"))?,
                     }
                 }
                 config.run_command = Some(command);
@@ -114,7 +174,8 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
             (key, value) => Err(format_err!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
-                key, value
+                key,
+                value
             ))?,
         }
     }
@@ -126,7 +187,7 @@ struct ConfigBuilder {
     manifest_path: Option<PathBuf>,
     default_target: Option<String>,
     output: Option<PathBuf>,
-    bootloader: Option<BootloaderConfigBuilder>,
+    bootloader: BootloaderConfigBuilder,
     minimum_image_size: Option<u64>,
     run_command: Option<Vec<String>>,
     package_filepath: Option<PathBuf>,
@@ -135,25 +196,18 @@ struct ConfigBuilder {
 #[derive(Default)]
 struct BootloaderConfigBuilder {
     name: Option<String>,
-    precompiled: Option<bool>,
     target: Option<PathBuf>,
-    version: Option<String>,
-    branch: Option<String>,
-    git: Option<String>,
-    path: Option<PathBuf>,
+    features: Option<Vec<String>>,
+    default_features: Option<bool>,
 }
 
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
-        let default_bootloader_config = BootloaderConfigBuilder {
-            precompiled: Some(true),
-            ..Default::default()
-        };
         Config {
             manifest_path: self.manifest_path.expect("manifest path must be set"),
             default_target: self.default_target,
             output: self.output,
-            bootloader: self.bootloader.unwrap_or(default_bootloader_config).into(),
+            bootloader: self.bootloader.into(),
             minimum_image_size: self.minimum_image_size,
             run_command: self.run_command.unwrap_or(vec![
                 "qemu-system-x86_64".into(),
@@ -167,21 +221,13 @@ impl Into<Config> for ConfigBuilder {
 
 impl Into<BootloaderConfig> for BootloaderConfigBuilder {
     fn into(self) -> BootloaderConfig {
-        let precompiled = self.precompiled.unwrap_or(false);
-        let default_name = if precompiled {
-            "bootloader_precompiled"
-        } else {
-            "bootloader"
-        };
         BootloaderConfig {
-            name: self.name.unwrap_or(default_name.into()),
-            precompiled,
-            target: self.target
+            name: self.name,
+            target: self
+                .target
                 .unwrap_or(PathBuf::from("x86_64-bootloader.json")),
-            version: self.version,
-            git: self.git,
-            branch: self.branch,
-            path: self.path,
+            features: self.features.unwrap_or(Vec::with_capacity(0)),
+            default_features: self.default_features.unwrap_or(true),
         }
     }
 }
