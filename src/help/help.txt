@@ -10,7 +10,7 @@ For more information about a subcommand run `bootimage [subcommand] --help`.
 
 OPTIONS:
     -h, --help      Prints help information and exit
-    ---version      Prints version information and exit
+    --version      Prints version information and exit
 
 BUILD_OPTS:
     Any options are directly passed to `cargo build` (see
