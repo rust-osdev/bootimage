@@ -97,13 +97,13 @@ pub(crate) fn build_impl(
     let kernel = build_kernel(&out_dir, &bin_name, &args, verbose)?;
 
     let maybe_package = if let Some(ref path) = config.package_filepath {
-        Some(File::open(path).context("Unable to open specified package file")?)
+        Some(File::open(path).with_context(|e| format!("Unable to open specified package file: {}", e))?)
     } else {
         None
     };
 
     let maybe_package_size = if let Some(ref file) = maybe_package {
-        Some(file.metadata().context("Failed to read specified package file")?.len())
+        Some(file.metadata().with_context(|e| format!("Failed to read specified package file: {}", e))?.len())
     } else {
         None
     };
@@ -123,6 +123,7 @@ pub(crate) fn build_impl(
         &bin_name,
         &config,
         kernel,
+        maybe_package,
         kernel_info_block,
         &bootloader,
         verbose,
@@ -395,7 +396,7 @@ fn create_disk_image(
 
     fn pad_file(output: &mut File, written_size: usize, padding: &[u8]) -> Result<(), Error> {
         let padding_size = (padding.len() - (written_size % padding.len())) % padding.len();
-        output.write_all(&padding[..padding_size]).context("Could not write to output file")?;
+        output.write_all(&padding[..padding_size]).with_context(|e| format!("Could not write to output file: {}", e))?;
         Ok(())
     }
 
