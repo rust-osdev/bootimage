@@ -10,6 +10,7 @@ pub struct Config {
     pub bootloader: BootloaderConfig,
     pub minimum_image_size: Option<u64>,
     pub run_command: Vec<String>,
+    pub package_filepath: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -167,6 +168,9 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
                 }
                 config.run_command = Some(command);
             }
+            ("package-file", Value::String(path)) => {
+                config.package_filepath = Some(PathBuf::from(path));
+            }
             (key, value) => Err(format_err!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
@@ -186,6 +190,7 @@ struct ConfigBuilder {
     bootloader: BootloaderConfigBuilder,
     minimum_image_size: Option<u64>,
     run_command: Option<Vec<String>>,
+    package_filepath: Option<PathBuf>,
 }
 
 #[derive(Default)]
@@ -209,6 +214,7 @@ impl Into<Config> for ConfigBuilder {
                 "-drive".into(),
                 "format=raw,file={}".into(),
             ]),
+            package_filepath: self.package_filepath,
         }
     }
 }

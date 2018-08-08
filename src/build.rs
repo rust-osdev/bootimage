@@ -96,11 +96,23 @@ pub(crate) fn build_impl(
 
     let kernel = build_kernel(&out_dir, &bin_name, &args, verbose)?;
 
+    let maybe_package = if let Some(ref path) = config.package_filepath {
+        Some(File::open(path).with_context(|e| format!("Unable to open specified package file: {}", e))?)
+    } else {
+        None
+    };
+
+    let maybe_package_size = if let Some(ref file) = maybe_package {
+        Some(file.metadata().with_context(|e| format!("Failed to read specified package file: {}", e))?.len())
+    } else {
+        None
+    };
+  
     let kernel_size = kernel
         .metadata()
         .with_context(|e| format!("Failed to read kernel output file: {}", e))?
         .len();
-    let kernel_info_block = create_kernel_info_block(kernel_size);
+    let kernel_info_block = create_kernel_info_block(kernel_size, maybe_package_size);
 
     let bootloader = build_bootloader(&metadata, &config)
         .with_context(|e| format!("Failed to build bootloader: {}", e))?;
@@ -111,6 +123,7 @@ pub(crate) fn build_impl(
         &bin_name,
         &config,
         kernel,
+        maybe_package,
         kernel_info_block,
         &bootloader,
         verbose,
@@ -213,15 +226,26 @@ fn run_cargo_fetch() {
     }
 }
 
-fn create_kernel_info_block(kernel_size: u64) -> KernelInfoBlock {
+fn create_kernel_info_block(kernel_size: u64, maybe_package_size: Option<u64>) -> KernelInfoBlock {
     let kernel_size = if kernel_size <= u64::from(u32::max_value()) {
         kernel_size as u32
     } else {
         panic!("Kernel can't be loaded by BIOS bootloader because is too big")
     };
 
+    let package_size = if let Some(size) = maybe_package_size {
+        if size <= u64::from(u32::max_value()) {
+            size as u32
+        } else {
+            panic!("Package can't be loaded by BIOS bootloader because is too big")
+        }
+    } else {
+        0
+    };
+
     let mut kernel_info_block = [0u8; BLOCK_SIZE];
     LittleEndian::write_u32(&mut kernel_info_block[0..4], kernel_size);
+    LittleEndian::write_u32(&mut kernel_info_block[8..12], package_size);
 
     kernel_info_block
 }
@@ -315,6 +339,7 @@ fn create_disk_image(
     bin_name: &str,
     config: &Config,
     mut kernel: File,
+    mut maybe_package: Option<File>,
     kernel_info_block: KernelInfoBlock,
     bootloader_data: &[u8],
     verbose: bool,
@@ -347,27 +372,46 @@ fn create_disk_image(
         .write_all(&kernel_info_block)
         .with_context(|e| format!("Could not write output bootimage file: {}", e))?;
 
-    // write out kernel elf file
-    let kernel_size = kernel.metadata()?.len();
-    let mut buffer = [0u8; 1024];
-    loop {
-        let (n, interrupted) = match kernel.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(n) => (n, false),
-            Err(ref e) if e.kind() == io::ErrorKind::Interrupted => (0, true),
-            Err(e) => Err(e)?,
-        };
-        if !interrupted {
-            output.write_all(&buffer[..n])?
+    fn write_file_to_file(output: &mut File, datafile: &mut File) -> Result<usize, Error> {
+        let data_size = datafile.metadata()?.len();
+        let mut buffer = [0u8; 1024];
+        let mut acc = 0;
+        loop {
+            let (n, interrupted) = match datafile.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(n) => (n, false),
+                Err(ref e) if e.kind() == io::ErrorKind::Interrupted => (0, true),
+                Err(e) => Err(e)?,
+            };
+            if !interrupted {
+                acc += n;
+                output.write_all(&buffer[..n])?
+            }
         }
+
+        assert!(data_size == acc as u64);
+
+        Ok(acc)
     }
 
-    let padding_size = ((512 - (kernel_size % 512)) % 512) as usize;
-    let padding = [0u8; 512];
-    output
-        .write_all(&padding[..padding_size])
-        .with_context(|e| format!("Could not write output bootimage file: {}", e))?;
+    fn pad_file(output: &mut File, written_size: usize, padding: &[u8]) -> Result<(), Error> {
+        let padding_size = (padding.len() - (written_size % padding.len())) % padding.len();
+        output.write_all(&padding[..padding_size]).with_context(|e| format!("Could not write to output file: {}", e))?;
+        Ok(())
+    }
 
+    // write out kernel elf file
+
+    let kernel_size = write_file_to_file(&mut output, &mut kernel)?;
+
+    pad_file(&mut output, kernel_size, &[0; 512])?;
+
+    if let Some(ref mut package) = maybe_package {
+        println!("Writing specified package to output");
+        let package_size = write_file_to_file(&mut output, package)?;
+        pad_file(&mut output, package_size, &[0; 512])?;
+    }
+  
     if let Some(min_size) = config.minimum_image_size {
         // we already wrote to output successfully,
         // both metadata and set_len should succeed.
