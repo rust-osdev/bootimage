@@ -107,14 +107,14 @@ pub(crate) fn build_impl(
     } else {
         None
     };
-  
+
     let kernel_size = kernel
         .metadata()
         .with_context(|e| format!("Failed to read kernel output file: {}", e))?
         .len();
     let kernel_info_block = create_kernel_info_block(kernel_size, maybe_package_size);
 
-    let bootloader = build_bootloader(&metadata, &config)
+    let bootloader = build_bootloader(&metadata, &config, verbose)
         .with_context(|e| format!("Failed to build bootloader: {}", e))?;
 
     create_disk_image(
@@ -250,7 +250,7 @@ fn create_kernel_info_block(kernel_size: u64, maybe_package_size: Option<u64>) -
     kernel_info_block
 }
 
-fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8]>, Error> {
+fn build_bootloader(metadata: &CargoMetadata, config: &Config, verbose: bool) -> Result<Box<[u8]>, Error> {
     use std::io::Read;
 
     let bootloader_metadata = metadata.packages.iter().find(|p| {
@@ -299,6 +299,10 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
 
         if !config.bootloader.default_features {
             args.push(String::from("--no-default-features"));
+        }
+
+        if verbose {
+            args.push(String::from("--verbose"));
         }
 
         println!("Building bootloader v{}", bootloader_metadata.version);
@@ -411,7 +415,7 @@ fn create_disk_image(
         let package_size = write_file_to_file(&mut output, package)?;
         pad_file(&mut output, package_size, &[0; 512])?;
     }
-  
+
     if let Some(min_size) = config.minimum_image_size {
         // we already wrote to output successfully,
         // both metadata and set_len should succeed.
