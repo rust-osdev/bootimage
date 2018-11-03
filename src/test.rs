@@ -107,8 +107,8 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
 	    }
 	    println!("");
 
-	    tests.push((target.name.clone(), test_result));
-	})
+	    tests.push((target.name.clone(), test_result))
+	});
 
     if tests.iter().all(|t| t.1 == TestResult::Ok) {
         println!("All tests succeeded.");
