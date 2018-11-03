@@ -40,7 +40,7 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
     let target_iter = crate_metadata.targets.iter();
     
 
-    target_iter.par_iter().for_each(|target| {
+    target_iter.into_par_iter().for_each(|target| {
     	if (target.kind == ["bin"] && target.name.starts_with("test-")) {
 		    println!("{}", target.name);
 
