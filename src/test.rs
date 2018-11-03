@@ -40,6 +40,8 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
 
     crate_metadata.targets.clone().into_par_iter().for_each(|target| {
     	if (target.kind == ["bin"] && target.name.starts_with("test-")) {
+		    use ::build;
+		    
 		    println!("{}", target.name);
 
 		    let mut target_args = test_args.clone();
