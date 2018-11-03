@@ -36,11 +36,9 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         .packages
         .iter()
         .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
-        .expect("Could not read crate name from cargo metadata");
-    let target_iter = crate_metadata.targets.iter();
-    
+        .expect("Could not read crate name from cargo metadata");    
 
-    target_iter.into_par_iter().for_each(|target| {
+    crate_metadata.targets.clone().into_par_iter().for_each(|target| {
     	if (target.kind == ["bin"] && target.name.starts_with("test-")) {
 		    println!("{}", target.name);
 
