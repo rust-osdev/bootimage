@@ -3,6 +3,7 @@ extern crate cargo_metadata;
 extern crate toml;
 extern crate wait_timeout;
 extern crate xmas_elf;
+extern crate rayon;
 #[macro_use]
 extern crate failure;
 
