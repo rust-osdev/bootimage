@@ -114,7 +114,7 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         println!("\nAll tests succeeded.");
         Ok(())
     } else {
-        writeln!(io::stderr(), "The following tests failed:")?;
+        writeln!(io::stderr(), "\nThe following tests failed:")?;
         for test in tests.iter().filter(|t| t.1 != TestResult::Ok) {
             writeln!(io::stderr(), "    {}: {:?}", test.0, test.1)?;
         }
