@@ -3,7 +3,7 @@ use build;
 use failure::{Error, ResultExt};
 use rayon::prelude::*;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use std::{fs, io, process};
 use wait_timeout::ChildExt;
@@ -30,16 +30,16 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         test_config
     };
 
-    let tests = metadata
+    let test_targets = metadata
         .packages
         .iter()
         .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
         .expect("Could not read crate name from cargo metadata")
         .targets
-        .par_iter()
+        .iter()
         .filter(|t| t.kind == ["bin"] && t.name.starts_with("test-"))
         .map(|target| {
-            println!("RUN: {}", target.name);
+            println!("BUILD: {}", target.name);
 
             let mut target_args = test_args.clone();
             target_args.set_bin_name(target.name.clone());
@@ -50,7 +50,17 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
                 &root_dir,
                 &out_dir,
                 false,
-            )?;
+            ).expect(&format!("Failed to build test: {}", target.name));
+            println!("");
+
+            (target, test_path)
+        })
+        .collect::<Vec<(&cargo_metadata::Target, PathBuf)>>();
+
+    let tests = test_targets
+        .par_iter()
+        .map(|(target, test_path)| {
+            println!("RUN: {}", target.name);
 
             let test_result;
             let output_file = format!("{}-output.txt", test_path.display());
@@ -92,13 +102,13 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
                         println!("OK: {}", target.name);
                     } else if output.starts_with("failed\n") {
                         test_result = TestResult::Failed;
-                        writeln!(io::stderr(), "Failed:")?;
+                        writeln!(io::stderr(), "FAIL:")?;
                         for line in output[7..].lines() {
                             writeln!(io::stderr(), "    {}", line)?;
                         }
                     } else {
                         test_result = TestResult::Invalid;
-                        writeln!(io::stderr(), "Failed: Invalid Output:")?;
+                        writeln!(io::stderr(), "FAIL: Invalid Output:")?;
                         for line in output.lines() {
                             writeln!(io::stderr(), "    {}", line)?;
                         }
@@ -110,11 +120,12 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         })
         .collect::<Result<Vec<(String, TestResult)>, Error>>()?;
 
+    println!("");
     if tests.iter().all(|t| t.1 == TestResult::Ok) {
-        println!("\nAll tests succeeded.");
+        println!("All tests succeeded.");
         Ok(())
     } else {
-        writeln!(io::stderr(), "\nThe following tests failed:")?;
+        writeln!(io::stderr(), "The following tests failed:")?;
         for test in tests.iter().filter(|t| t.1 != TestResult::Ok) {
             writeln!(io::stderr(), "    {}: {:?}", test.0, test.1)?;
         }
