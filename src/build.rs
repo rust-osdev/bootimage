@@ -271,9 +271,9 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
             `cargo install bootimage --version {} --force`.", r#""^0.4""#
         ))?,
         };
-    let bootloader_dir = Path::new(&bootloader_metadata.manifest_path)
-        .parent()
-        .unwrap();
+
+    let bootloader_manifest_path = Path::new(&bootloader_metadata.manifest_path);
+    let bootloader_dir = bootloader_manifest_path.parent().unwrap();
 
     let mut bootloader_target_path = PathBuf::from(bootloader_dir);
     bootloader_target_path.push(&config.bootloader.target);
@@ -308,8 +308,11 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
             process::exit(1)
         }
 
-        let mut bootloader_elf_path = bootloader_dir.to_path_buf();
-        bootloader_elf_path.push("target");
+        let bootloader_metadata = cargo_metadata::metadata(bootloader_manifest_path.into())
+            .map_err(|e| CargoMetadataError {
+                error: format!("{}", e),
+            })?;
+        let mut bootloader_elf_path = PathBuf::from(bootloader_metadata.target_directory);
         bootloader_elf_path.push(config.bootloader.target.file_stem().unwrap());
         bootloader_elf_path.push("release");
         bootloader_elf_path.push("bootloader");
