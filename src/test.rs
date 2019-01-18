@@ -12,21 +12,10 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
     let (args, config, metadata, root_dir, out_dir) = build::common_setup(args)?;
 
     let test_args = args.clone();
-    let test_run_command = vec![
-        "qemu-system-x86_64".into(),
-        "-drive".into(),
-        "format=raw,file={}".into(),
-        "-device".into(),
-        "isa-debug-exit,iobase=0xf4,iosize=0x04".into(),
-        "-display".into(),
-        "none".into(),
-        "-serial".into(),
-        "file:{}-output.txt".into(),
-    ];
+
     let test_config = {
         let mut test_config = config.clone();
         test_config.output = None;
-        test_config.run_command = test_run_command;
         test_config
     };
 
