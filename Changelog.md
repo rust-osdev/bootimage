@@ -1,6 +1,9 @@
+- Canonicalize paths before comparing them
+  - This caused an error on Windows where the path in the cargo metadata is not fully canonicalized
+
 # 0.6.2
 
-- Fix build on Windows
+- Fix build on Windows (don't use the `.` directory)
 
 # 0.6.1
 

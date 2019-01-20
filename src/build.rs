@@ -91,7 +91,12 @@ pub(crate) fn build_impl(
     let crate_ = metadata
         .packages
         .iter()
-        .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
+        .find(|p| {
+            Path::new(&p.manifest_path)
+                .canonicalize()
+                .map(|path| path == config.manifest_path)
+                .unwrap_or(false)
+        })
         .expect("Could not read crate name from cargo metadata");
     let bin_name: String = args.bin_name().as_ref().unwrap_or(&crate_.name).clone();
 
