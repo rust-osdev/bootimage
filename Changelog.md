@@ -1,3 +1,5 @@
+- Fix build on Windows
+
 # 0.6.1
 
 - Fix: bootimage should now work correctly with `--manifest-path`

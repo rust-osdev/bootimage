@@ -45,7 +45,7 @@ pub(crate) fn common_setup(
 
     let metadata = read_cargo_metadata(&args)?;
     let manifest_path = args.manifest_path().as_ref().map(Clone::clone)
-        .unwrap_or(Path::new("./Cargo.toml").canonicalize().unwrap());
+        .unwrap_or(Path::new("Cargo.toml").canonicalize().unwrap());
     let crate_root = manifest_path.parent().unwrap().to_path_buf();
     let config = config::read_config(manifest_path)?;
 
