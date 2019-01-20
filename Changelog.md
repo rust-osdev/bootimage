@@ -1,3 +1,5 @@
+# 0.6.3
+
 - Canonicalize paths before comparing them
   - This caused an error on Windows where the path in the cargo metadata is not fully canonicalized
 
