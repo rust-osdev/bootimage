@@ -1,4 +1,8 @@
+- Fix: bootimage should now work correctly with `--manifest-path`
+
 # 0.6.0
+
+(Yanked from crates.io because of a bug fixed in 0.6.1.)
 
 **Breaking**:
 
