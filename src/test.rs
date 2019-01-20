@@ -39,7 +39,8 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
                 &root_dir,
                 &out_dir,
                 false,
-            ).expect(&format!("Failed to build test: {}", target.name));
+            )
+            .expect(&format!("Failed to build test: {}", target.name));
             println!("");
 
             (target, test_path)

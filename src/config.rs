@@ -43,7 +43,8 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
             return Ok(ConfigBuilder {
                 manifest_path: Some(manifest_path),
                 ..Default::default()
-            }.into())
+            }
+            .into());
         }
         Some(metadata) => metadata.as_table().ok_or(format_err!(
             "Bootimage configuration invalid: {:?}",
@@ -80,7 +81,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
             Some(_) => {
                 return Err(format_err!(
                     "Bootloader 'default-features' field should be a bool!"
-                ))
+                ));
             }
         };
 

@@ -44,7 +44,10 @@ pub(crate) fn common_setup(
     }
 
     let metadata = read_cargo_metadata(&args)?;
-    let manifest_path = args.manifest_path().as_ref().map(Clone::clone)
+    let manifest_path = args
+        .manifest_path()
+        .as_ref()
+        .map(Clone::clone)
         .unwrap_or(Path::new("Cargo.toml").canonicalize().unwrap());
     let crate_root = manifest_path.parent().unwrap().to_path_buf();
     let config = config::read_config(manifest_path)?;
@@ -66,7 +69,8 @@ pub(crate) fn common_setup(
                 io::stderr(),
                 "Please pass a path to `--target` (with `.json` extension`): `--target {}.json`",
                 target
-            ).unwrap();
+            )
+            .unwrap();
             process::exit(1);
         }
     }
@@ -94,17 +98,24 @@ pub(crate) fn build_impl(
     let kernel = build_kernel(&out_dir, &bin_name, &args, verbose)?;
 
     let maybe_package = if let Some(ref path) = config.package_filepath {
-        Some(File::open(path).with_context(|e| format!("Unable to open specified package file: {}", e))?)
+        Some(
+            File::open(path)
+                .with_context(|e| format!("Unable to open specified package file: {}", e))?,
+        )
     } else {
         None
     };
 
     let maybe_package_size = if let Some(ref file) = maybe_package {
-        Some(file.metadata().with_context(|e| format!("Failed to read specified package file: {}", e))?.len())
+        Some(
+            file.metadata()
+                .with_context(|e| format!("Failed to read specified package file: {}", e))?
+                .len(),
+        )
     } else {
         None
     };
-  
+
     let kernel_size = kernel
         .metadata()
         .with_context(|e| format!("Failed to read kernel output file: {}", e))?
@@ -400,7 +411,9 @@ fn create_disk_image(
 
     fn pad_file(output: &mut File, written_size: usize, padding: &[u8]) -> Result<(), Error> {
         let padding_size = (padding.len() - (written_size % padding.len())) % padding.len();
-        output.write_all(&padding[..padding_size]).with_context(|e| format!("Could not write to output file: {}", e))?;
+        output
+            .write_all(&padding[..padding_size])
+            .with_context(|e| format!("Could not write to output file: {}", e))?;
         Ok(())
     }
 
@@ -415,7 +428,7 @@ fn create_disk_image(
         let package_size = write_file_to_file(&mut output, package)?;
         pad_file(&mut output, package_size, &[0; 512])?;
     }
-  
+
     if let Some(min_size) = config.minimum_image_size {
         // we already wrote to output successfully,
         // both metadata and set_len should succeed.
