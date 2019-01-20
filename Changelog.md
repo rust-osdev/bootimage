@@ -1,3 +1,5 @@
+# 0.6.1
+
 - Fix: bootimage should now work correctly with `--manifest-path`
 
 # 0.6.0
