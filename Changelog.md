@@ -1,3 +1,5 @@
+# 0.6.2
+
 - Fix build on Windows
 
 # 0.6.1
