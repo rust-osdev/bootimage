@@ -1,6 +1,9 @@
+- Canonicalize paths before comparing them when invoking `bootimage test`
+  - This caused an error on Windows where the path in the cargo metadata is not fully canonicalized
+
 # 0.6.3
 
-- Canonicalize paths before comparing them
+- Canonicalize paths before comparing them when invoking `bootimage build`
   - This caused an error on Windows where the path in the cargo metadata is not fully canonicalized
 
 # 0.6.2

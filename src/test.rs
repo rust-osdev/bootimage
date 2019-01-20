@@ -22,7 +22,12 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
     let test_targets = metadata
         .packages
         .iter()
-        .find(|p| Path::new(&p.manifest_path) == config.manifest_path)
+        .find(|p| {
+            Path::new(&p.manifest_path)
+                .canonicalize()
+                .map(|path| path == config.manifest_path)
+                .unwrap_or(false)
+        })
         .expect("Could not read crate name from cargo metadata")
         .targets
         .iter()
