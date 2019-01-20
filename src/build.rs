@@ -44,12 +44,9 @@ pub(crate) fn common_setup(
     }
 
     let metadata = read_cargo_metadata(&args)?;
-    let crate_root = PathBuf::from(&metadata.workspace_root);
-    let manifest_path = args.manifest_path().as_ref().map(Clone::clone).unwrap_or({
-        let mut path = crate_root.clone();
-        path.push("Cargo.toml");
-        path
-    });
+    let manifest_path = args.manifest_path().as_ref().map(Clone::clone)
+        .unwrap_or(Path::new("./Cargo.toml").canonicalize().unwrap());
+    let crate_root = manifest_path.parent().unwrap().to_path_buf();
     let config = config::read_config(manifest_path)?;
 
     if args.target().is_none() {
