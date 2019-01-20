@@ -9,8 +9,38 @@ notifications:
 
 rust:
     - nightly
+    - stable
+    - beta
 
-cache: cargo
+os:
+  - linux
+  - osx
+  - windows
+
+cache:
+  cargo: true
+  directories:
+    - $HOME/Library/Caches/Homebrew
+
+addons:
+  apt:
+    packages:
+      - qemu-system-x86
+  homebrew:
+    packages:
+      - qemu
+
+install:
+  - if [ $TRAVIS_OS_NAME = windows ]; then choco install qemu; export PATH="/c/Program Files/qemu:$PATH"; fi
+
+before_script:
+  - rustup component add rust-src
+  - (test -x $HOME/.cargo/bin/cargo-update-installed || cargo install cargo-update-installed)
+  - (test -x $HOME/.cargo/bin/cargo-xbuild || cargo install cargo-xbuild)
+  - cargo update-installed
 
 script:
 - cargo test
+- cargo install --debug --force
+- git clone https://github.com/phil-opp/blog_os.git
+- if [ $TRAVIS_RUST_VERSION = nightly ]; then bootimage test --manifest-path blog_os/Cargo.toml; fi
