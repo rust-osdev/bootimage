@@ -1,5 +1,8 @@
+# 0.6.4
+
 - Canonicalize paths before comparing them when invoking `bootimage test`
   - This caused an error on Windows where the path in the cargo metadata is not fully canonicalized
+- Improve CI infrastructure
 
 # 0.6.3
 
