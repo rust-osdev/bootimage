@@ -1,3 +1,5 @@
+- You can now mark integration tests as success/failure by setting the exit code in the QEMU `isa-debug-exit` device. See [#32](https://github.com/rust-osdev/bootimage/issues/32) for more information.
+
 # 0.6.4
 
 - Canonicalize paths before comparing them when invoking `bootimage test`
