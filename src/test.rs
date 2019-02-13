@@ -88,24 +88,62 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
                     test_result = TestResult::TimedOut;
                     writeln!(io::stderr(), "Timed Out")?;
                 }
-                Some(_) => {
+                Some(exit_status) => {
                     let output = fs::read_to_string(&output_file).with_context(|e| {
                         format_err!("Failed to read test output file {}: {}", output_file, e)
                     })?;
-                    if output.starts_with("ok\n") {
-                        test_result = TestResult::Ok;
-                        println!("OK: {}", target.name);
-                    } else if output.starts_with("failed\n") {
-                        test_result = TestResult::Failed;
-                        writeln!(io::stderr(), "FAIL:")?;
-                        for line in output[7..].lines() {
-                            writeln!(io::stderr(), "    {}", line)?;
+
+                    match exit_status.code() {
+                        None => {
+                            test_result = TestResult::Invalid;
+                            writeln!(io::stderr(), "FAIL: No Exit Code.")?;
+                            for line in output.lines() {
+                                writeln!(io::stderr(), "    {}", line)?;
+                            }
                         }
-                    } else {
-                        test_result = TestResult::Invalid;
-                        writeln!(io::stderr(), "FAIL: Invalid Output:")?;
-                        for line in output.lines() {
-                            writeln!(io::stderr(), "    {}", line)?;
+                        Some(code) => {
+                            if code == 1 {
+                                // 0 << 1 | 1
+                                if output.starts_with("ok\n") {
+                                    test_result = TestResult::Ok;
+                                    println!("OK: {}", target.name);
+                                } else if output.starts_with("failed\n") {
+                                    test_result = TestResult::Failed;
+                                    writeln!(io::stderr(), "FAIL:")?;
+                                    for line in output[7..].lines() {
+                                        writeln!(io::stderr(), "    {}", line)?;
+                                    }
+                                } else {
+                                    test_result = TestResult::Invalid;
+                                    writeln!(io::stderr(), "FAIL: Invalid Output:")?;
+                                    for line in output.lines() {
+                                        writeln!(io::stderr(), "    {}", line)?;
+                                    }
+                                }
+                            } else if code == 5 {
+                                // 2 << 1 | 1
+                                test_result = TestResult::Ok;
+                                println!("OK: {}", target.name);
+                            } else if code == 7 {
+                                // 3 << 1 | 1
+                                test_result = TestResult::Failed;
+                                let fail_index = output.find("failed\n");
+                                if fail_index.is_some() {
+                                    writeln!(io::stderr(), "FAIL:")?;
+                                    let fail_output = output.split_at(fail_index.unwrap()).1;
+                                    for line in fail_output[7..].lines() {
+                                        writeln!(io::stderr(), "    {}", line)?;
+                                    }
+                                } else {
+                                    writeln!(io::stderr(), "FAIL: {}", target.name)?;
+                                }
+                            } else {
+                                test_result = TestResult::Invalid;
+                                writeln!(io::stderr(), "FAIL: Invalid Exit Code {}:", code)?;
+                                for line in output.lines() {
+                                    writeln!(io::stderr(), "    {}", line)?;
+                                }
+                            }
                         }
                     }
                 }
