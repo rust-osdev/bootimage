@@ -1,3 +1,4 @@
+use crate::ErrorString;
 use failure::{Error, ResultExt};
 use std::path::PathBuf;
 use toml::Value;
@@ -6,11 +7,11 @@ use toml::Value;
 pub struct Config {
     pub manifest_path: PathBuf,
     pub default_target: Option<String>,
-    pub output: Option<PathBuf>,
-    pub bootloader: BootloaderConfig,
-    pub minimum_image_size: Option<u64>,
+    pub output: Option<PathBuf>,         // remove
+    pub bootloader: BootloaderConfig,    // remove
+    pub minimum_image_size: Option<u64>, // remove
     pub run_command: Vec<String>,
-    pub package_filepath: Option<PathBuf>,
+    pub package_filepath: Option<PathBuf>, // remove
 }
 
 #[derive(Debug, Clone)]
@@ -21,7 +22,13 @@ pub struct BootloaderConfig {
     pub features: Vec<String>,
 }
 
-pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, Error> {
+pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorString> {
+    let config = read_config_inner(manifest_path)
+        .map_err(|err| format!("Failed to read bootimage configuration: {:?}", err))?;
+    Ok(config)
+}
+
+pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, Error> {
     use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();

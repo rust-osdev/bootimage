@@ -1,6 +1,6 @@
+use crate::{config::Config, Command};
 use std::path::{Path, PathBuf};
 use std::{env, mem};
-use crate::Command;
 
 pub(crate) fn parse_args() -> Command {
     let mut args = env::args().skip(1);
@@ -183,5 +183,14 @@ impl Args {
         self.bin_name = Some(bin_name.clone());
         self.cargo_args.push("--bin".into());
         self.cargo_args.push(bin_name);
+    }
+
+    pub fn apply_default_target(&mut self, config: &Config, crate_root: &Path) {
+        if self.target().is_none() {
+            if let Some(ref target) = config.default_target {
+                let canonicalized_target = crate_root.join(target);
+                self.set_target(canonicalized_target.to_string_lossy().into_owned());
+            }
+        }
     }
 }

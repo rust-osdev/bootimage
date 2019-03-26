@@ -1,34 +1,25 @@
 use crate::args::Args;
-use crate::build;
+use crate::config;
+use crate::subcommand::build;
 use failure::{Error, ResultExt};
 use rayon::prelude::*;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 use std::{fs, io, process};
 use wait_timeout::ChildExt;
 
-pub(crate) fn test(args: Args) -> Result<(), Error> {
-    let (args, config, metadata, root_dir, out_dir) = build::common_setup(args)?;
+pub(crate) fn test(mut args: Args) -> Result<(), crate::ErrorString> {
+    let builder = bootimage::Builder::new(args.manifest_path().clone())?;
+    let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
+    args.apply_default_target(&config, builder.kernel_root());
 
     let test_args = args.clone();
 
-    let test_config = {
-        let mut test_config = config.clone();
-        test_config.output = None;
-        test_config
-    };
-
-    let test_targets = metadata
-        .packages
-        .iter()
-        .find(|p| {
-            Path::new(&p.manifest_path)
-                .canonicalize()
-                .map(|path| path == config.manifest_path)
-                .unwrap_or(false)
-        })
-        .expect("Could not read crate name from cargo metadata")
+    let kernel_package = builder
+        .kernel_package()
+        .map_err(|key| format!("Kernel package not found it cargo metadata (`{}`)", key))?;
+    let test_targets = kernel_package
         .targets
         .iter()
         .filter(|t| t.kind == ["bin"] && t.name.starts_with("test-"))
@@ -37,18 +28,11 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
 
             let mut target_args = test_args.clone();
             target_args.set_bin_name(target.name.clone());
-            let test_path = build::build_impl(
-                &target_args,
-                &test_config,
-                &metadata,
-                &root_dir,
-                &out_dir,
-                false,
-            )
-            .expect(&format!("Failed to build test: {}", target.name));
+            let test_bin_path = build::build_impl(&builder, &mut target_args, true)
+                .expect(&format!("Failed to build test: {}", target.name));
             println!("");
 
-            (target, test_path)
+            (target, test_bin_path)
         })
         .collect::<Vec<(&cargo_metadata::Target, PathBuf)>>();
 

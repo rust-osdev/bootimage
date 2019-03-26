@@ -2,13 +2,13 @@
 extern crate failure;
 
 use args::Args;
-use std::{io, process};
+use std::{fmt, process};
 
 mod args;
-mod build;
 mod config;
 mod help;
-mod test;
+
+mod subcommand;
 
 enum Command {
     NoSubcommand,
@@ -23,24 +23,46 @@ enum Command {
 }
 
 pub fn main() {
-    use std::io::Write;
     if let Err(err) = run() {
-        writeln!(io::stderr(), "Error: {}", err).unwrap();
+        eprintln!("Error: {}", err.display());
         process::exit(1);
     }
 }
 
-fn run() -> Result<(), failure::Error> {
+fn run() -> Result<(), ErrorString> {
     let command = args::parse_args();
     match command {
+        Command::Build(args) => subcommand::build::build(args),
+        Command::Run(args) => subcommand::run::run(args),
+        Command::Test(args) => subcommand::test::test(args),
         Command::NoSubcommand => help::no_subcommand(),
-        Command::Build(args) => build::build(args),
-        Command::Run(args) => build::run(args),
-        Command::Test(args) => test::test(args),
         Command::Help => Ok(help::help()),
         Command::BuildHelp => Ok(help::build_help()),
         Command::RunHelp => Ok(help::run_help()),
         Command::TestHelp => Ok(help::test_help()),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
+    }
+}
+
+struct ErrorString(Box<dyn fmt::Display>);
+
+impl ErrorString {
+    fn display(&self) -> &dyn fmt::Display {
+        &self.0
+    }
+}
+
+impl fmt::Debug for ErrorString {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.display().fmt(f)
+    }
+}
+
+impl<T> From<T> for ErrorString
+where
+    T: fmt::Display + 'static,
+{
+    fn from(err: T) -> Self {
+        ErrorString(Box::new(err))
     }
 }
