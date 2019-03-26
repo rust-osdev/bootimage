@@ -73,7 +73,7 @@ where
                 _ if arg.starts_with("--bin=") => {
                     set(
                         &mut bin_name,
-                        Some(String::from(arg.trim_left_matches("--bin="))),
+                        Some(String::from(arg.trim_start_matches("--bin="))),
                     );
                     cargo_args.push(arg);
                 }
@@ -88,7 +88,7 @@ where
                 _ if arg.starts_with("--target=") => {
                     set(
                         &mut target,
-                        Some(String::from(arg.trim_left_matches("--target="))),
+                        Some(String::from(arg.trim_start_matches("--target="))),
                     );
                     cargo_args.push(arg);
                 }
@@ -108,7 +108,7 @@ where
                     }
                 }
                 _ if arg.starts_with("--manifest-path=") => {
-                    let path = Path::new(arg.trim_left_matches("--manifest-path="))
+                    let path = Path::new(arg.trim_start_matches("--manifest-path="))
                         .canonicalize()
                         .expect("--manifest-path invalid");
                     set(&mut manifest_path, Some(path));
