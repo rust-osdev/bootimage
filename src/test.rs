@@ -6,7 +6,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use std::{fs, io, process};
-use wait_timeout::{ChildExt, ExitStatus};
+use wait_timeout::ChildExt;
 
 pub(crate) fn test(args: Args) -> Result<(), Error> {
     let (args, config, metadata, root_dir, out_dir) = build::common_setup(args)?;
@@ -114,7 +114,7 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
 }
 
 fn handle_exit_status(
-    exit_status: ExitStatus,
+    exit_status: process::ExitStatus,
     output: &str,
     target_name: &str,
 ) -> Result<TestResult, Error> {

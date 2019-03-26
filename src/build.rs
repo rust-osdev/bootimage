@@ -174,11 +174,15 @@ impl failure::Fail for CargoMetadataError {}
 
 fn read_cargo_metadata(args: &Args) -> Result<CargoMetadata, Error> {
     run_cargo_fetch(args);
-    let metadata =
-        cargo_metadata::metadata_deps(args.manifest_path().as_ref().map(PathBuf::as_path), true)
-            .map_err(|e| CargoMetadataError {
-                error: format!("{}", e),
-            })?;
+    let metadata = {
+        let mut cmd = cargo_metadata::MetadataCommand::new();
+        if let Some(ref path) = args.manifest_path() {
+            cmd.manifest_path(path.as_path());
+        }
+        cmd.exec().map_err(|e| CargoMetadataError {
+            error: format!("{}", e),
+        })?
+    };
     Ok(metadata)
 }
 
@@ -302,7 +306,12 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
     } else {
         let mut args = vec![
             String::from("--manifest-path"),
-            bootloader_metadata.manifest_path.clone(),
+            bootloader_metadata
+                .manifest_path
+                .as_os_str()
+                .to_os_string()
+                .into_string()
+                .expect("manifest path not valid unicode"),
             String::from("--target"),
             bootloader_target_path.display().to_string(),
             String::from("--release"),
@@ -325,10 +334,14 @@ fn build_bootloader(metadata: &CargoMetadata, config: &Config) -> Result<Box<[u8
             process::exit(1)
         }
 
-        let bootloader_metadata = cargo_metadata::metadata(bootloader_manifest_path.into())
-            .map_err(|e| CargoMetadataError {
+        let bootloader_metadata = {
+            let mut cmd = cargo_metadata::MetadataCommand::new();
+            cmd.manifest_path(&bootloader_manifest_path);
+            cmd.no_deps();
+            cmd.exec().map_err(|e| CargoMetadataError {
                 error: format!("{}", e),
-            })?;
+            })?
+        };
         let mut bootloader_elf_path = PathBuf::from(bootloader_metadata.target_directory);
         bootloader_elf_path.push(config.bootloader.target.file_stem().unwrap());
         bootloader_elf_path.push("release");
