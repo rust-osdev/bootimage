@@ -1,3 +1,5 @@
+# 0.6.6
+
 - Update dependencies
 
 # 0.6.5
