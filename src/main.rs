@@ -1,9 +1,3 @@
-extern crate byteorder;
-extern crate cargo_metadata;
-extern crate rayon;
-extern crate toml;
-extern crate wait_timeout;
-extern crate xmas_elf;
 #[macro_use]
 extern crate failure;
 

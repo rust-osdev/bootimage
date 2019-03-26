@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::{env, mem};
-use Command;
+use crate::Command;
 
 pub(crate) fn parse_args() -> Command {
     let mut args = env::args().skip(1);

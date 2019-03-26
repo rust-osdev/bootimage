@@ -1,7 +1,7 @@
-use args::{self, Args};
+use crate::args::{self, Args};
 use byteorder::{ByteOrder, LittleEndian};
 use cargo_metadata::{self, Metadata as CargoMetadata};
-use config::{self, Config};
+use crate::config::{self, Config};
 use failure::{self, Error, ResultExt};
 use std::fs::File;
 use std::io::Write;

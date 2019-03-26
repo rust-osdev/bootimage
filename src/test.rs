@@ -1,5 +1,5 @@
-use args::Args;
-use build;
+use crate::args::Args;
+use crate::build;
 use failure::{Error, ResultExt};
 use rayon::prelude::*;
 use std::io::Write;
