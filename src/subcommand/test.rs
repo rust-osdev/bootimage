@@ -24,7 +24,6 @@ pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {
             target_args.set_bin_name(target.name.clone());
             let test_bin_path = build::build_impl(&builder, &mut target_args, true)
                 .expect(&format!("Failed to build test: {}", target.name));
-            println!("");
 
             (target, test_bin_path)
         })
