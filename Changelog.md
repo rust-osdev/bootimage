@@ -1,3 +1,26 @@
+
+## Breaking
+
+- Rewrite for new bootloader build system
+  - Compatible with bootloader 0.5.0+
+- Remove the following config options: `output`, `bootloader.*`, `minimum_image_size`, and `package_filepath`
+  - The bootloader is now fully controlled through cargo dependencies.
+  - For using a bootloader crate with name different than `bootloader` use [cargo's rename feature](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml).
+- Remove support for `bootloader_precompiled`
+  - The `bootloader` crate compiles fine on all architectures for some time and should be prefered
+- Require the `llvm-tools-preview` rustup component
+
+## Other
+
+- Add support for default targets declared in `.cargo/config` files
+- Add a `cargo-bootimage` executable that is equivalent to `bootimage build` and can be used as cargo subcommand (`cargo bootimage`)
+- Add a new `bootimage runner` subcommand that can be used as `target.[…].runner` in `.cargo/config` files
+- Make test timeout configurable and increase default to 5 minutes
+- Move crate to 2018 edition
+- Refactor and cleanup the code
+- Remove the dependency on `failure`
+    - Use a custom `ErrorString` type instead
+
 # 0.6.6
 
 - Update dependencies
