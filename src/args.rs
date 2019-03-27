@@ -1,18 +1,24 @@
-use crate::{config::Config, Command};
+use crate::{config::Config, Command, ErrorString};
 use std::path::{Path, PathBuf};
 use std::{env, mem};
 
-pub(crate) fn parse_args() -> Command {
-    let mut args = env::args().skip(1);
+pub(crate) fn parse_args() -> Result<Command, ErrorString> {
+    let mut args = env::args();
+    let executable_name = args.next().ok_or("no first argument (executable name)")?;
     let first = args.next();
     match first.as_ref().map(|s| s.as_str()) {
         Some("build") => parse_build_args(args),
-        Some("run") => match parse_build_args(args) {
+        Some("bootimage") if executable_name.ends_with("cargo-bootimage") => parse_build_args(args)
+            .map(|cmd| match cmd {
+                Command::BuildHelp => Command::CargoBootimageHelp,
+                cmd => cmd,
+            }),
+        Some("run") => parse_build_args(args).map(|cmd| match cmd {
             Command::Build(args) => Command::Run(args),
             Command::BuildHelp => Command::RunHelp,
             cmd => cmd,
-        },
-        Some("test") => match parse_build_args(args) {
+        }),
+        Some("test") => parse_build_args(args).map(|cmd| match cmd {
             Command::Build(args) => {
                 assert_eq!(
                     args.bin_name, None,
@@ -22,15 +28,15 @@ pub(crate) fn parse_args() -> Command {
             }
             Command::BuildHelp => Command::TestHelp,
             cmd => cmd,
-        },
+        }),
         Some("runner") => parse_runner_args(args),
-        Some("--help") | Some("-h") => Command::Help,
-        Some("--version") => Command::Version,
-        _ => Command::NoSubcommand,
+        Some("--help") | Some("-h") => Ok(Command::Help),
+        Some("--version") => Ok(Command::Version),
+        _ => Ok(Command::NoSubcommand),
     }
 }
 
-fn parse_build_args<A>(args: A) -> Command
+fn parse_build_args<A>(args: A) -> Result<Command, ErrorString>
 where
     A: Iterator<Item = String>,
 {
@@ -42,12 +48,12 @@ where
     let mut run_args = Vec::new();
     let mut run_args_started = false;
     {
-        fn set<T>(arg: &mut Option<T>, value: Option<T>) {
+        fn set<T>(arg: &mut Option<T>, value: Option<T>) -> Result<(), ErrorString> {
             let previous = mem::replace(arg, value);
-            assert!(
-                previous.is_none(),
-                "multiple arguments of same type provided"
-            )
+            if previous.is_some() {
+                Err("multiple arguments of same type provided")?
+            }
+            Ok(())
         };
 
         let mut arg_iter = args.into_iter();
@@ -58,14 +64,14 @@ where
             }
             match arg.as_ref() {
                 "--help" | "-h" => {
-                    return Command::BuildHelp;
+                    return Ok(Command::BuildHelp);
                 }
                 "--version" => {
-                    return Command::Version;
+                    return Ok(Command::Version);
                 }
                 "--bin" => {
                     let next = arg_iter.next();
-                    set(&mut bin_name, next.clone());
+                    set(&mut bin_name, next.clone())?;
                     cargo_args.push(arg);
                     if let Some(next) = next {
                         cargo_args.push(next);
@@ -75,12 +81,12 @@ where
                     set(
                         &mut bin_name,
                         Some(String::from(arg.trim_start_matches("--bin="))),
-                    );
+                    )?;
                     cargo_args.push(arg);
                 }
                 "--target" => {
                     let next = arg_iter.next();
-                    set(&mut target, next.clone());
+                    set(&mut target, next.clone())?;
                     cargo_args.push(arg);
                     if let Some(next) = next {
                         cargo_args.push(next);
@@ -90,7 +96,7 @@ where
                     set(
                         &mut target,
                         Some(String::from(arg.trim_start_matches("--target="))),
-                    );
+                    )?;
                     cargo_args.push(arg);
                 }
                 "--manifest-path" => {
@@ -102,7 +108,7 @@ where
                                 .canonicalize()
                                 .expect("--manifest-path invalid")
                         }),
-                    );
+                    )?;
                     cargo_args.push(arg);
                     if let Some(next) = next {
                         cargo_args.push(next);
@@ -112,11 +118,11 @@ where
                     let path = Path::new(arg.trim_start_matches("--manifest-path="))
                         .canonicalize()
                         .expect("--manifest-path invalid");
-                    set(&mut manifest_path, Some(path));
+                    set(&mut manifest_path, Some(path))?;
                     cargo_args.push(arg);
                 }
                 "--release" => {
-                    set(&mut release, Some(true));
+                    set(&mut release, Some(true))?;
                     cargo_args.push(arg);
                 }
                 "--" => {
@@ -129,14 +135,14 @@ where
         }
     }
 
-    Command::Build(Args {
+    Ok(Command::Build(Args {
         cargo_args,
         run_args,
         bin_name,
         target,
         manifest_path,
         release: release.unwrap_or(false),
-    })
+    }))
 }
 
 #[derive(Debug, Clone)]
@@ -196,7 +202,7 @@ impl Args {
     }
 }
 
-fn parse_runner_args<A>(args: A) -> Command
+fn parse_runner_args<A>(args: A) -> Result<Command, ErrorString>
 where
     A: Iterator<Item = String>,
 {
@@ -204,34 +210,36 @@ where
     let executable = PathBuf::from(
         arg_iter
             .next()
-            .expect("excepted path to kernel executable as first argument"),
+            .ok_or("excepted path to kernel executable as first argument")?,
     )
     .canonicalize()
-    .expect("Failed to canonicalize executable path");
+    .map_err(|err| format!("Failed to canonicalize executable path: {}", err))?;
     let mut run_command = None;
 
     loop {
         match arg_iter.next().as_ref().map(|s| s.as_str()) {
             Some("--command") => {
                 let old = mem::replace(&mut run_command, Some(arg_iter.collect()));
-                assert!(old.is_none(), "multiple `--command` arguments");
+                if !old.is_none() {
+                    Err("multiple `--command` arguments")?;
+                }
                 break;
             }
             Some("--help") | Some("-h") => {
-                return Command::RunnerHelp;
+                return Ok(Command::RunnerHelp);
             }
             Some("--version") => {
-                return Command::Version;
+                return Ok(Command::Version);
             }
             None => break,
-            Some(arg) => panic!("unexpected argument `{}`", arg),
+            Some(arg) => Err(format!("unexpected argument `{}`", arg))?,
         }
     }
 
-    Command::Runner(RunnerArgs {
+    Ok(Command::Runner(RunnerArgs {
         executable,
         run_command,
-    })
+    }))
 }
 
 #[derive(Debug, Clone)]

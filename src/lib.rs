@@ -19,12 +19,13 @@ enum Command {
     BuildHelp,
     RunHelp,
     TestHelp,
+    CargoBootimageHelp,
     RunnerHelp,
     Version,
 }
 
 pub fn run() -> Result<(), ErrorString> {
-    let command = args::parse_args();
+    let command = args::parse_args()?;
     match command {
         Command::Build(args) => subcommand::build::build(args),
         Command::Run(args) => subcommand::run::run(args),
@@ -35,8 +36,8 @@ pub fn run() -> Result<(), ErrorString> {
         Command::BuildHelp => Ok(help::build_help()),
         Command::RunHelp => Ok(help::run_help()),
         Command::TestHelp => Ok(help::test_help()),
-        Command::RunnerHelp => unimplemented!(),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
+        Command::RunnerHelp | Command::CargoBootimageHelp => unimplemented!(),
     }
 }
 
