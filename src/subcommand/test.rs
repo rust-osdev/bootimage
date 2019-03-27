@@ -1,15 +1,9 @@
-use crate::args::Args;
-use crate::config;
-use crate::subcommand::build;
-use failure::{Error, ResultExt};
+use crate::{args::Args, config, subcommand::build, ErrorString};
+use std::{io::Write, path::PathBuf, time::Duration, fs, io, process};
 use rayon::prelude::*;
-use std::io::Write;
-use std::path::PathBuf;
-use std::time::Duration;
-use std::{fs, io, process};
 use wait_timeout::ChildExt;
 
-pub(crate) fn test(mut args: Args) -> Result<(), crate::ErrorString> {
+pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {
     let builder = bootimage::Builder::new(args.manifest_path().clone())?;
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
@@ -56,25 +50,25 @@ pub(crate) fn test(mut args: Args) -> Result<(), crate::ErrorString> {
             command.stderr(process::Stdio::null());
             let mut child = command
                 .spawn()
-                .with_context(|e| format_err!("Failed to launch QEMU: {:?}\n{}", command, e))?;
+                .map_err(|e| format!("Failed to launch QEMU: {:?}\n{}", command, e))?;
             let timeout = Duration::from_secs(60);
             match child
                 .wait_timeout(timeout)
-                .with_context(|e| format!("Failed to wait with timeout: {}", e))?
+                .map_err(|e| format!("Failed to wait with timeout: {}", e))?
             {
                 None => {
                     child
                         .kill()
-                        .with_context(|e| format!("Failed to kill QEMU: {}", e))?;
+                        .map_err(|e| format!("Failed to kill QEMU: {}", e))?;
                     child
                         .wait()
-                        .with_context(|e| format!("Failed to wait for QEMU process: {}", e))?;
+                        .map_err(|e| format!("Failed to wait for QEMU process: {}", e))?;
                     test_result = TestResult::TimedOut;
                     writeln!(io::stderr(), "Timed Out")?;
                 }
                 Some(exit_status) => {
-                    let output = fs::read_to_string(&output_file).with_context(|e| {
-                        format_err!("Failed to read test output file {}: {}", output_file, e)
+                    let output = fs::read_to_string(&output_file).map_err(|e| {
+                        format!("Failed to read test output file {}: {}", output_file, e)
                     })?;
                     test_result = handle_exit_status(exit_status, &output, &target.name)?;
                 }
@@ -82,7 +76,7 @@ pub(crate) fn test(mut args: Args) -> Result<(), crate::ErrorString> {
 
             Ok((target.name.clone(), test_result))
         })
-        .collect::<Result<Vec<(String, TestResult)>, Error>>()?;
+        .collect::<Result<Vec<(String, TestResult)>, ErrorString>>()?;
 
     println!("");
     if tests.iter().all(|t| t.1 == TestResult::Ok) {
@@ -101,7 +95,7 @@ fn handle_exit_status(
     exit_status: process::ExitStatus,
     output: &str,
     target_name: &str,
-) -> Result<TestResult, Error> {
+) -> Result<TestResult, ErrorString> {
     match exit_status.code() {
         None => {
             writeln!(io::stderr(), "FAIL: No Exit Code.")?;

@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate failure;
-
 use args::Args;
 use std::{fmt, process};
 
@@ -44,7 +41,7 @@ fn run() -> Result<(), ErrorString> {
     }
 }
 
-struct ErrorString(Box<dyn fmt::Display>);
+struct ErrorString(Box<dyn fmt::Display + Send>);
 
 impl ErrorString {
     fn display(&self) -> &dyn fmt::Display {
@@ -60,7 +57,7 @@ impl fmt::Debug for ErrorString {
 
 impl<T> From<T> for ErrorString
 where
-    T: fmt::Display + 'static,
+    T: fmt::Display + Send + 'static,
 {
     fn from(err: T) -> Self {
         ErrorString(Box::new(err))

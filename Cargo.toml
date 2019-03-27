@@ -19,8 +19,3 @@ locate-cargo-manifest = "0.1.0"
 [dependencies.cargo_metadata]
 version = "0.7.4"
 default-features = false
-
-[dependencies.failure]
-version = "0.1.5"
-default-features = false
-features = ["std"]

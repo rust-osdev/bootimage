@@ -1,5 +1,4 @@
 use crate::ErrorString;
-use failure::{Error, ResultExt};
 use std::path::PathBuf;
 use toml::Value;
 
@@ -16,17 +15,17 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorString>
     Ok(config)
 }
 
-pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, Error> {
+pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorString> {
     use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
         File::open(&manifest_path)
-            .with_context(|e| format!("Failed to open Cargo.toml: {}", e))?
+            .map_err(|e| format!("Failed to open Cargo.toml: {}", e))?
             .read_to_string(&mut content)
-            .with_context(|e| format!("Failed to read Cargo.toml: {}", e))?;
+            .map_err(|e| format!("Failed to read Cargo.toml: {}", e))?;
         content
             .parse::<Value>()
-            .with_context(|e| format!("Failed to parse Cargo.toml: {}", e))?
+            .map_err(|e| format!("Failed to parse Cargo.toml: {}", e))?
     };
 
     let metadata = cargo_toml
@@ -41,30 +40,11 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, Error>
             }
             .into());
         }
-        Some(metadata) => metadata.as_table().ok_or(format_err!(
+        Some(metadata) => metadata.as_table().ok_or(format!(
             "Bootimage configuration invalid: {:?}",
             metadata
         ))?,
     };
-
-    /*
-     * The user shouldn't specify any features if they're using a precompiled bootloader, as we
-     * don't actually compile it.
-     */
-    if cargo_toml
-        .get("dependencies")
-        .and_then(|table| table.get("bootloader_precompiled"))
-        .and_then(|table| {
-            table
-                .get("features")
-                .or_else(|| table.get("default-features"))
-        })
-        .is_some()
-    {
-        return Err(format_err!(
-            "Can't change features of precompiled bootloader!"
-        ));
-    }
 
     let mut config = ConfigBuilder {
         manifest_path: Some(manifest_path),
@@ -79,12 +59,12 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, Error>
                 for value in array {
                     match value {
                         Value::String(s) => command.push(s),
-                        _ => Err(format_err!("run-command must be a list of strings"))?,
+                        _ => Err(format!("run-command must be a list of strings"))?,
                     }
                 }
                 config.run_command = Some(command);
             }
-            (key, value) => Err(format_err!(
+            (key, value) => Err(format!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
                 key,
