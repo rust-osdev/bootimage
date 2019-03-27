@@ -1,11 +1,11 @@
-use crate::{args::RunnerArgs, ErrorString};
+use crate::{args::RunnerArgs, builder::Builder, ErrorString};
 use std::process;
 
 pub(crate) fn runner(args: RunnerArgs) -> Result<(), ErrorString> {
     let out_dir = tempdir::TempDir::new("bootimage-runner")?;
     let bootimage_bin = out_dir.path().join("bootimage.bin");
 
-    let builder = bootimage::Builder::new(None)?;
+    let builder = Builder::new(None)?;
     builder.create_bootimage(&args.executable, &bootimage_bin, false)?;
 
     let run_cmd = args.run_command.unwrap_or(vec![

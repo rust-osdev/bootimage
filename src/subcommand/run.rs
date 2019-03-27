@@ -1,10 +1,10 @@
-use crate::{args::Args, config, ErrorString};
+use crate::{args::Args, builder::Builder, config, ErrorString};
 use std::process;
 
 pub(crate) fn run(mut args: Args) -> Result<(), ErrorString> {
     use crate::subcommand::build;
 
-    let builder = bootimage::Builder::new(args.manifest_path().clone())?;
+    let builder = Builder::new(args.manifest_path().clone())?;
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
 

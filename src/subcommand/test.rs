@@ -1,10 +1,10 @@
-use crate::{args::Args, config, subcommand::build, ErrorString};
+use crate::{args::Args, builder::Builder, config, subcommand::build, ErrorString};
 use rayon::prelude::*;
 use std::{fs, io, io::Write, path::PathBuf, process, time::Duration};
 use wait_timeout::ChildExt;
 
 pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {
-    let builder = bootimage::Builder::new(args.manifest_path().clone())?;
+    let builder = Builder::new(args.manifest_path().clone())?;
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
 

@@ -1,12 +1,11 @@
-use crate::{args::Args, config, ErrorString};
-use bootimage::Builder;
+use crate::{args::Args, builder::Builder, cargo_config, config, ErrorString};
 use std::{
     path::{Path, PathBuf},
     process,
 };
 
 pub(crate) fn build(mut args: Args) -> Result<(), ErrorString> {
-    let builder = bootimage::Builder::new(args.manifest_path().clone())?;
+    let builder = Builder::new(args.manifest_path().clone())?;
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
 
@@ -34,14 +33,13 @@ pub(crate) fn build_impl(
     Ok(bootimage_path)
 }
 
-fn out_dir(args: &Args, builder: &bootimage::Builder) -> Result<PathBuf, ErrorString> {
+fn out_dir(args: &Args, builder: &Builder) -> Result<PathBuf, ErrorString> {
     let target_dir = PathBuf::from(&builder.kernel_metadata().target_directory);
     let mut out_dir = target_dir;
     if let &Some(ref target) = args.target() {
         out_dir.push(Path::new(target).file_stem().unwrap().to_str().unwrap());
     } else {
-        let default_triple =
-            bootimage::default_target_triple_from_cargo_config(builder.kernel_root(), true)?;
+        let default_triple = cargo_config::default_target_triple(builder.kernel_root(), true)?;
         if let Some(triple) = default_triple {
             out_dir.push(triple);
         }
