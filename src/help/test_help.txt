@@ -15,3 +15,12 @@ USAGE:
 
     (for other forms of usage see `bootimage --help`)
     (for BUILD_OPTS see `bootimage build --help`)
+
+CONFIGURATION:
+    The behavior of `bootimage test` can be configured through a
+    `[package.metadata.bootimage]` table in the `Cargo.toml`. The
+    following options are available to configure test behavior:
+
+    [package.metadata.bootimage]
+    # The timeout for running an integration test in seconds
+    test-timeout = 300

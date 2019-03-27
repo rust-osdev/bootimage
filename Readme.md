@@ -35,10 +35,15 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
 
 ```toml
     [package.metadata.bootimage]
-    default-target = ""         # This target is used if no `--target` is passed
+    # This target is used if no `--target` is passed
+    default-target = ""
+
     # The command invoked on `bootimage run`
     # (the "{}" will be replaced with the path to the bootable disk image)
     run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
+
+    # The timeout for running an integration test in seconds
+    test-timeout = 300
 ```
 
 ## License

@@ -7,6 +7,7 @@ pub struct Config {
     pub manifest_path: PathBuf,
     pub default_target: Option<String>,
     pub run_command: Vec<String>,
+    pub test_timeout: u64,
 }
 
 pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorString> {
@@ -16,7 +17,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorString>
 }
 
 pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorString> {
-    use std::{fs::File, io::Read};
+    use std::{convert::TryFrom, fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
         File::open(&manifest_path)
@@ -53,6 +54,11 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorS
     for (key, value) in metadata {
         match (key.as_str(), value.clone()) {
             ("default-target", Value::String(s)) => config.default_target = From::from(s),
+            ("test-timeout", Value::Integer(s)) => {
+                config.test_timeout = u64::try_from(s)
+                    .map_err(|err| format!("test-timeout is not valid: {}", err))?
+                    .into()
+            }
             ("run-command", Value::Array(array)) => {
                 let mut command = Vec::new();
                 for value in array {
@@ -78,6 +84,7 @@ struct ConfigBuilder {
     manifest_path: Option<PathBuf>,
     default_target: Option<String>,
     run_command: Option<Vec<String>>,
+    test_timeout: Option<u64>,
 }
 
 impl Into<Config> for ConfigBuilder {
@@ -90,6 +97,7 @@ impl Into<Config> for ConfigBuilder {
                 "-drive".into(),
                 "format=raw,file={}".into(),
             ]),
+            test_timeout: self.test_timeout.unwrap_or(60 * 5),
         }
     }
 }
