@@ -1,6 +1,6 @@
 use crate::{args::Args, config, subcommand::build, ErrorString};
-use std::{io::Write, path::PathBuf, time::Duration, fs, io, process};
 use rayon::prelude::*;
+use std::{fs, io, io::Write, path::PathBuf, process, time::Duration};
 use wait_timeout::ChildExt;
 
 pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {

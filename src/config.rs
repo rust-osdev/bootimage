@@ -40,10 +40,9 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorS
             }
             .into());
         }
-        Some(metadata) => metadata.as_table().ok_or(format!(
-            "Bootimage configuration invalid: {:?}",
-            metadata
-        ))?,
+        Some(metadata) => metadata
+            .as_table()
+            .ok_or(format!("Bootimage configuration invalid: {:?}", metadata))?,
     };
 
     let mut config = ConfigBuilder {
@@ -67,8 +66,7 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorS
             (key, value) => Err(format!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
-                key,
-                value
+                key, value
             ))?,
         }
     }

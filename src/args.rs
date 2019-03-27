@@ -201,7 +201,13 @@ where
     A: Iterator<Item = String>,
 {
     let mut arg_iter = args.into_iter().fuse();
-    let executable = PathBuf::from(arg_iter.next().expect("excepted path to kernel executable as first argument")).canonicalize().expect("Failed to canonicalize executable path");
+    let executable = PathBuf::from(
+        arg_iter
+            .next()
+            .expect("excepted path to kernel executable as first argument"),
+    )
+    .canonicalize()
+    .expect("Failed to canonicalize executable path");
     let mut run_command = None;
 
     loop {
