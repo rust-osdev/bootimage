@@ -1,4 +1,4 @@
-use args::{Args, RunnerArgs};
+use args::{Args, RunnerArgs, TesterArgs};
 use std::fmt;
 
 pub mod args;
@@ -15,12 +15,14 @@ enum Command {
     Run(Args),
     Test(Args),
     Runner(RunnerArgs),
+    Tester(TesterArgs),
     Help,
     BuildHelp,
     RunHelp,
     TestHelp,
     CargoBootimageHelp,
     RunnerHelp,
+    TesterHelp,
     Version,
 }
 
@@ -31,13 +33,14 @@ pub fn run() -> Result<(), ErrorString> {
         Command::Run(args) => subcommand::run::run(args),
         Command::Test(args) => subcommand::test::test(args),
         Command::Runner(args) => subcommand::runner::runner(args),
+        Command::Tester(args) => subcommand::tester::tester(args),
         Command::NoSubcommand => help::no_subcommand(),
         Command::Help => Ok(help::help()),
         Command::BuildHelp => Ok(help::build_help()),
         Command::RunHelp => Ok(help::run_help()),
         Command::TestHelp => Ok(help::test_help()),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))),
-        Command::RunnerHelp | Command::CargoBootimageHelp => unimplemented!(),
+        Command::RunnerHelp | Command::TesterHelp | Command::CargoBootimageHelp => unimplemented!(),
     }
 }
 

@@ -30,6 +30,11 @@ pub(crate) fn parse_args() -> Result<Command, ErrorString> {
             cmd => cmd,
         }),
         Some("runner") => parse_runner_args(args),
+        Some("tester") => parse_runner_args(args).map(|cmd| match cmd {
+            Command::Runner(args) => Command::Tester(TesterArgs::from(args)),
+            Command::RunnerHelp => Command::TesterHelp,
+            other => other,
+        }),
         Some("--help") | Some("-h") => Ok(Command::Help),
         Some("--version") => Ok(Command::Version),
         _ => Ok(Command::NoSubcommand),
@@ -246,4 +251,19 @@ where
 pub struct RunnerArgs {
     pub executable: PathBuf,
     pub run_command: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TesterArgs {
+    pub test_path: PathBuf,
+    pub run_command: Option<Vec<String>>,
+}
+
+impl From<RunnerArgs> for TesterArgs {
+    fn from(args: RunnerArgs) -> Self {
+        Self {
+            test_path: args.executable,
+            run_command: args.run_command,
+        }
+    }
 }
