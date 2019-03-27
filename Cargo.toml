@@ -15,6 +15,7 @@ wait-timeout = "0.2"
 xmas-elf = "0.6.2"
 llvm-tools = "0.1.1"
 locate-cargo-manifest = "0.1.0"
+tempdir = "0.3.7"
 
 [dependencies.cargo_metadata]
 version = "0.7.4"

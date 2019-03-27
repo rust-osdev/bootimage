@@ -23,6 +23,7 @@ pub(crate) fn parse_args() -> Command {
             Command::BuildHelp => Command::TestHelp,
             cmd => cmd,
         },
+        Some("runner") => parse_runner_args(args),
         Some("--help") | Some("-h") => Command::Help,
         Some("--version") => Command::Version,
         _ => Command::NoSubcommand,
@@ -193,4 +194,42 @@ impl Args {
             }
         }
     }
+}
+
+fn parse_runner_args<A>(args: A) -> Command
+where
+    A: Iterator<Item = String>,
+{
+    let mut arg_iter = args.into_iter().fuse();
+    let executable = PathBuf::from(arg_iter.next().expect("excepted path to kernel executable as first argument")).canonicalize().expect("Failed to canonicalize executable path");
+    let mut run_command = None;
+
+    loop {
+        match arg_iter.next().as_ref().map(|s| s.as_str()) {
+            Some("--command") => {
+                let old = mem::replace(&mut run_command, Some(arg_iter.collect()));
+                assert!(old.is_none(), "multiple `--command` arguments");
+                break;
+            }
+            Some("--help") | Some("-h") => {
+                return Command::RunnerHelp;
+            }
+            Some("--version") => {
+                return Command::Version;
+            }
+            None => break,
+            Some(arg) => panic!("unexpected argument `{}`", arg),
+        }
+    }
+
+    Command::Runner(RunnerArgs {
+        executable,
+        run_command,
+    })
+}
+
+#[derive(Debug, Clone)]
+pub struct RunnerArgs {
+    pub executable: PathBuf,
+    pub run_command: Option<Vec<String>>,
 }
