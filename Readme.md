@@ -16,8 +16,10 @@ First you need to add a dependency on the `bootloader` crate:
 # in your Cargo.toml
 
 [dependencies]
-bootloader = "0.2.0-alpha"
+bootloader = "0.5.0"
 ```
+
+**Note**: At least bootloader version `0.5.0` is required.
 
 Now you can build the kernel project and create a bootable disk image from it by running:
 
@@ -25,7 +27,7 @@ Now you can build the kernel project and create a bootable disk image from it by
 > bootimage build --target your_custom_target.json [other_args]
 ```
 
-The command will invoke [`cargo xbuild`](https://github.com/rust-osdev/cargo-xbuild), forwarding all passed options. Then it will download and build a bootloader, by default the [rust-osdev/bootloader](https://github.com/rust-osdev/bootloader). Finally, it combines the kernel and the bootloader into a bootable disk image.
+The command will invoke [`cargo xbuild`](https://github.com/rust-osdev/cargo-xbuild), forwarding all passed options. Then it will build the specified bootloader together with the kernel to create a bootable disk image.
 
 ## Configuration
 
@@ -34,15 +36,9 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
 ```toml
     [package.metadata.bootimage]
     default-target = ""         # This target is used if no `--target` is passed
-    output = "bootimage.bin"    # The output file name
-    minimum-image-size = 0      # The minimum output file size (in MiB)
     # The command invoked on `bootimage run`
     # (the "{}" will be replaced with the path to the bootable disk image)
     run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
-
-    [package.metadata.bootimage.bootloader]
-    name = "bootloader"                 # The bootloader crate name
-    target = "x86_64-bootloader.json"   # Target triple for compiling the bootloader
 ```
 
 ## License

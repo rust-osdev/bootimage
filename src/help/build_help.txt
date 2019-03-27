@@ -18,9 +18,3 @@ CONFIGURATION:
 
     [package.metadata.bootimage]
     default-target = ""         This target is used if no `--target` is passed
-    output = "bootimage.bin"    The output file name
-    minimum-image-size = 0      The minimum output file size (in MiB)
-
-    [package.metadata.bootimage.bootloader]
-    name = "bootloader"                 The bootloader crate name
-    target = "x86_64-bootloader.json"   Target triple for compiling the bootloader
