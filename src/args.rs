@@ -220,6 +220,7 @@ where
     .canonicalize()
     .map_err(|err| format!("Failed to canonicalize executable path: {}", err))?;
     let mut run_command = None;
+    let mut run_args = None;
 
     loop {
         match arg_iter.next().as_ref().map(|s| s.as_str()) {
@@ -227,6 +228,13 @@ where
                 let old = mem::replace(&mut run_command, Some(arg_iter.collect()));
                 if !old.is_none() {
                     Err("multiple `--command` arguments")?;
+                }
+                break;
+            }
+            Some("--args") => {
+                let old = mem::replace(&mut run_args, Some(arg_iter.collect()));
+                if !old.is_none() {
+                    Err("multiple `--args` arguments")?;
                 }
                 break;
             }
@@ -244,6 +252,7 @@ where
     Ok(Command::Runner(RunnerArgs {
         executable,
         run_command,
+        run_args: run_args,
     }))
 }
 
@@ -251,6 +260,7 @@ where
 pub struct RunnerArgs {
     pub executable: PathBuf,
     pub run_command: Option<Vec<String>>,
+    pub run_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone)]

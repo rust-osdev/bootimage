@@ -20,6 +20,9 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<(), ErrorString> {
     for arg in &run_cmd[1..] {
         command.arg(arg.replace("{bootimage}", &format!("{}", bootimage_bin.display())));
     }
+    if let Some(run_args) = args.run_args {
+        command.args(run_args);
+    }
     let output = command
         .output()
         .map_err(|e| format!("Failed to execute `{:?}`: {}", command, e))?;
