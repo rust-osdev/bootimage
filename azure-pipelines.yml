@@ -11,117 +11,192 @@ trigger:
     # Build pull requests.
     - master
 
-strategy:
-  matrix:
-    linux:
-      image_name: 'ubuntu-16.04'
-      rustup_toolchain: stable
-    mac:
-      image_name: 'macos-10.13'
-      rustup_toolchain: stable
-    windows:
-      image_name: 'vs2017-win2016'
-      rustup_toolchain: stable
+jobs:
+- job: build
+  displayName: Build
+  strategy:
+    matrix:
+      linux:
+        image_name: 'ubuntu-16.04'
+        rustup_toolchain: stable
+      mac:
+        image_name: 'macos-10.13'
+        rustup_toolchain: stable
+      windows:
+        image_name: 'vs2017-win2016'
+        rustup_toolchain: stable
 
-pool:
-  vmImage: $(image_name)
+  pool:
+    vmImage: $(image_name)
 
-steps:
-- bash: |
-    echo "Hello world from $AGENT_NAME running on $AGENT_OS"
-    echo "Reason: $BUILD_REASON"
-    case "$BUILD_REASON" in
-            "Manual") echo "$BUILD_REQUESTEDFOR manually queued the build." ;;
-            "PullRequest") echo "This is a CI build for a pull request on $BUILD_REQUESTEDFOR." ;;
-            "IndividualCI") echo "This is a CI build for $BUILD_REQUESTEDFOR." ;;
-            "BatchedCI") echo "This is a batched CI build for $BUILD_REQUESTEDFOR." ;;
-        *) "$BUILD_REASON" ;;
-    esac
-  displayName: 'Build Info'
-  continueOnError: true
+  steps:
+  - bash: |
+      echo "Hello world from $AGENT_NAME running on $AGENT_OS"
+      echo "Reason: $BUILD_REASON"
+      case "$BUILD_REASON" in
+              "Manual") echo "$BUILD_REQUESTEDFOR manually queued the build." ;;
+              "PullRequest") echo "This is a CI build for a pull request on $BUILD_REQUESTEDFOR." ;;
+              "IndividualCI") echo "This is a CI build for $BUILD_REQUESTEDFOR." ;;
+              "BatchedCI") echo "This is a batched CI build for $BUILD_REQUESTEDFOR." ;;
+          *) "$BUILD_REASON" ;;
+      esac
+    displayName: 'Build Info'
+    continueOnError: true
 
-- script: |
-    set -euxo pipefail
-    curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
-    echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
-  condition: or(eq( variables['Agent.OS'], 'Linux' ),  eq( variables['Agent.OS'], 'Darwin' ))
-  displayName: 'Install Rust (Linux/macOS)'
+  - script: |
+      set -euxo pipefail
+      curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
+      echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+    condition: or(eq( variables['Agent.OS'], 'Linux' ),  eq( variables['Agent.OS'], 'Darwin' ))
+    displayName: 'Install Rust (Linux/macOS)'
 
-- script: curl -sSf -o rustup-init.exe https://win.rustup.rs && rustup-init.exe -y --default-toolchain %RUSTUP_TOOLCHAIN%
-  condition: eq( variables['Agent.OS'], 'Windows_NT' )
-  displayName: 'Install Rust (Windows)'
+  - script: curl -sSf -o rustup-init.exe https://win.rustup.rs && rustup-init.exe -y --default-toolchain %RUSTUP_TOOLCHAIN%
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    displayName: 'Install Rust (Windows)'
 
-- script: |
-    echo ##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin
-  condition: eq( variables['Agent.OS'], 'Windows_NT' )
-  displayName: 'Add ~/.cargo/bin to PATH (Windows)'
+  - script: |
+      echo ##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    displayName: 'Add ~/.cargo/bin to PATH (Windows)'
 
-- script: |
-    rustc -Vv
-    cargo -V
-  displayName: 'Print Rust Version'
-  continueOnError: true
+  - script: |
+      rustc -Vv
+      cargo -V
+    displayName: 'Print Rust Version'
+    continueOnError: true
 
-- script: cargo build
-  displayName: 'Build'
+  - script: cargo build
+    displayName: 'Build'
 
-- script: cargo test
-  displayName: 'Test'
+  - script: cargo test
+    displayName: 'Test'
 
-- script: rustup component add rust-src llvm-tools-preview
-  displayName: 'Install Rustup Components'
 
-- script: cargo install cargo-xbuild --debug
-  displayName: 'Install cargo-xbuild'
+- job: test
+  displayName: Test
 
-- script: sudo apt update && sudo apt install qemu-system-x86
-  condition: eq( variables['Agent.OS'], 'Linux' )
-  displayName: 'Install QEMU (Linux)'
+  strategy:
+    matrix:
+      linux:
+        image_name: 'ubuntu-16.04'
+        rustup_toolchain: nightly
+      mac:
+        image_name: 'macos-10.13'
+        rustup_toolchain: nightly
+      windows:
+        image_name: 'vs2017-win2016'
+        rustup_toolchain: nightly
 
-- script: |
-    set -euxo pipefail
-    export HOMEBREW_NO_AUTO_UPDATE=1
-    export HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK=1
-    export HOMEBREW_NO_INSTALL_CLEANUP=1
-    brew install qemu
-  condition: eq( variables['Agent.OS'], 'Darwin' )
-  displayName: 'Install QEMU (macOS)'
+  pool:
+    vmImage: $(image_name)
 
-- script: |
-    choco install qemu --limit-output --no-progress
-    echo ##vso[task.setvariable variable=PATH;]%PATH%;C:\Program Files\qemu
-    set PATH=%PATH%;C:\Program Files\qemu
-    qemu-system-x86_64 --version
-  condition: eq( variables['Agent.OS'], 'Windows_NT' )
-  failOnStderr: true
-  displayName: 'Install QEMU (Windows)'
+  steps:
+  - bash: |
+      echo "Hello world from $AGENT_NAME running on $AGENT_OS"
+      echo "Reason: $BUILD_REASON"
+      case "$BUILD_REASON" in
+              "Manual") echo "$BUILD_REQUESTEDFOR manually queued the build." ;;
+              "PullRequest") echo "This is a CI build for a pull request on $BUILD_REQUESTEDFOR." ;;
+              "IndividualCI") echo "This is a CI build for $BUILD_REQUESTEDFOR." ;;
+              "BatchedCI") echo "This is a batched CI build for $BUILD_REQUESTEDFOR." ;;
+          *) "$BUILD_REASON" ;;
+      esac
+    displayName: 'Build Info'
+    continueOnError: true
 
-- script: cargo install --path . --force --debug
-  displayName: 'Install this bootimage version'
+  - script: |
+      set -euxo pipefail
+      curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
+      echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+    condition: or(eq( variables['Agent.OS'], 'Linux' ),  eq( variables['Agent.OS'], 'Darwin' ))
+    displayName: 'Install Rust (Linux/macOS)'
 
-- script: rustup toolchain add nightly
-  displayName: 'Install Rust Nightly'
+  - script: curl -sSf -o rustup-init.exe https://win.rustup.rs && rustup-init.exe -y --default-toolchain %RUSTUP_TOOLCHAIN%
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    displayName: 'Install Rust (Windows)'
 
-- script: bootimage build --target x86_64-basic.json && file target/x86_64-basic/debug/bootimage-basic.bin
-  workingDirectory: example-kernels/basic
-  displayName: 'Build Example Kernel "Basic"'
+  - script: |
+      echo ##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    displayName: 'Add ~/.cargo/bin to PATH (Windows)'
 
-- script: bootimage run --target x86_64-basic.json
-  workingDirectory: example-kernels/basic
-  displayName: 'Run Example Kernel "basic"'
+  - script: |
+      rustc -Vv
+      cargo -V
+    displayName: 'Print Rust Version'
+    continueOnError: true
 
-- script: bootimage build && file target/x86_64-default-target/debug/bootimage-default-target-bootimage.bin
-  workingDirectory: example-kernels/default-target-bootimage
-  displayName: 'Build Example Kernel "default-target-bootimage"'
+  - script: rustup component add rust-src llvm-tools-preview
+    displayName: 'Install Rustup Components'
 
-- script: bootimage run
-  workingDirectory: example-kernels/default-target-bootimage
-  displayName: 'Run Example Kernel "default-target-bootimage"'
+  - script: cargo install cargo-xbuild --debug
+    displayName: 'Install cargo-xbuild'
 
-- script: bootimage build && file target/x86_64-default-target/debug/bootimage-default-target-cargo.bin
-  workingDirectory: example-kernels/default-target-cargo
-  displayName: 'Build Example Kernel "default-target-cargo"'
+  - script: sudo apt update && sudo apt install qemu-system-x86
+    condition: eq( variables['Agent.OS'], 'Linux' )
+    displayName: 'Install QEMU (Linux)'
 
-- script: bootimage run
-  workingDirectory: example-kernels/default-target-cargo
-  displayName: 'Run Example Kernel "default-target-cargo"'
+  - script: |
+      set -euxo pipefail
+      export HOMEBREW_NO_AUTO_UPDATE=1
+      export HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK=1
+      export HOMEBREW_NO_INSTALL_CLEANUP=1
+      brew install qemu
+    condition: eq( variables['Agent.OS'], 'Darwin' )
+    displayName: 'Install QEMU (macOS)'
+
+  - script: |
+      choco install qemu --limit-output --no-progress
+      echo ##vso[task.setvariable variable=PATH;]%PATH%;C:\Program Files\qemu
+      set PATH=%PATH%;C:\Program Files\qemu
+      qemu-system-x86_64 --version
+    condition: eq( variables['Agent.OS'], 'Windows_NT' )
+    failOnStderr: true
+    displayName: 'Install QEMU (Windows)'
+
+  - script: cargo install --path . --force --debug
+    displayName: 'Install this bootimage version'
+
+  - script: bootimage build --target ../x86_64-bootimage-example-kernels.json
+    workingDirectory: example-kernels/basic
+    displayName: 'Build "basic" Kernel'
+
+  - bash: |
+      qemu-system-x86_64 -drive format=raw,file=target/x86_64-bootimage-example-kernels/debug/bootimage-basic.bin -device isa-debug-exit,iobase=0xf4,iosize=0x04 -display none
+      if [ $? -eq 103 ]; then (exit 0); else (exit 1); fi
+    workingDirectory: example-kernels
+    displayName: 'Run QEMU with "basic" Kernel'
+
+  - bash: |
+      bootimage run --target ../x86_64-bootimage-example-kernels.json -- -device isa-debug-exit,iobase=0xf4,iosize=0x04 -display none
+      if [ $? -eq 103 ]; then (exit 0); else (exit 1); fi
+    workingDirectory: example-kernels/basic
+    displayName: 'Check Exit Code of `bootimage run` for "basic" kernel'
+
+  - bash: |
+      bootimage run -- -device isa-debug-exit,iobase=0xf4,iosize=0x04 -display none
+      if [ $? -eq 105 ]; then (exit 0); else (exit 1); fi
+    workingDirectory: example-kernels/default-target-bootimage
+    displayName: 'Check Exit Code of `bootimage run` for "default-target-bootimage" kernel'
+
+  - bash: |
+      bootimage run -- -device isa-debug-exit,iobase=0xf4,iosize=0x04 -display none
+      if [ $? -eq 107 ]; then (exit 0); else (exit 1); fi
+    workingDirectory: example-kernels/default-target-cargo
+    displayName: 'Check Exit Code of `bootimage run` for "default-target-cargo" kernel'
+
+  - script: bootimage test
+    workingDirectory: example-kernels/testing-serial-result
+    displayName: 'Run `bootimage test` for "testing-serial-result" kernel'
+
+  - script: bootimage test
+    workingDirectory: example-kernels/testing-qemu-exit-code
+    displayName: 'Run `bootimage test` for "testing-qemu-exit-code" kernel'
+
+  - script: cargo xrun
+    workingDirectory: example-kernels/runner
+    displayName: 'Run `cargo xrun` for "runner" kernel'
+
+  - script: cargo test
+    workingDirectory: example-kernels/tester
+    displayName: 'Run `cargo test` for "tester" kernel'

@@ -1,0 +1,5 @@
+[build]
+target = "../x86_64-bootimage-example-kernels.json"
+
+[target.'cfg(target_os = "none")']
+runner = "bootimage runner --args -device isa-debug-exit,iobase=0xf4,iosize=0x04 -display none"

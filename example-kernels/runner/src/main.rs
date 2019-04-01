@@ -24,5 +24,5 @@ pub unsafe fn exit_qemu() {
     use x86_64::instructions::port::Port;
 
     let mut port = Port::<u32>::new(0xf4);
-    port.write(51); // exit code is (51 << 1) | 1 = 103
+    port.write(54); // exit code is (54 << 1) | 1 = 109
 }

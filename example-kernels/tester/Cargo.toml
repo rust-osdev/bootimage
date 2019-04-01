@@ -1,5 +1,5 @@
 [package]
-name = "default-target-bootimage"
+name = "tester"
 version = "0.1.0"
 authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 edition = "2018"
@@ -7,6 +7,3 @@ edition = "2018"
 [dependencies]
 bootloader = "0.5.0"
 x86_64 = "0.5.3"
-
-[package.metadata.bootimage]
-default-target = "../x86_64-bootimage-example-kernels.json"

@@ -2,7 +2,7 @@
 #![cfg_attr(not(test), no_main)]
 #![cfg_attr(test, allow(unused_imports))]
 
-use blog_os::{exit_qemu, serial_println};
+use testing_serial_result::{exit_qemu, serial_println};
 use core::panic::PanicInfo;
 
 #[cfg(not(test))]

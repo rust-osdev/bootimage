@@ -2,7 +2,7 @@
 #![cfg_attr(not(test), no_main)] // disable all Rust-level entry points
 #![cfg_attr(test, allow(unused_imports))]
 
-use blog_os::{exit_qemu, serial_println};
+use testing_qemu_exit_code::{exit_qemu, ExitCode};
 use core::panic::PanicInfo;
 
 /// This function is the entry point, since the linker looks for a function
@@ -10,10 +10,8 @@ use core::panic::PanicInfo;
 #[cfg(not(test))]
 #[no_mangle] // don't mangle the name of this function
 pub extern "C" fn _start() -> ! {
-    serial_println!("ok");
-
     unsafe {
-        exit_qemu();
+        exit_qemu(ExitCode::Success);
     }
     loop {}
 }
@@ -22,12 +20,8 @@ pub extern "C" fn _start() -> ! {
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    serial_println!("failed");
-
-    serial_println!("{}", info);
-
     unsafe {
-        exit_qemu();
+        exit_qemu(ExitCode::Failure);
     }
     loop {}
 }
