@@ -1,4 +1,4 @@
-use crate::{args::TesterArgs, builder::Builder, config, ErrorString};
+use crate::{cargo_config, args::TesterArgs, builder::Builder, config, ErrorString};
 use std::{
     fs,
     io::{self, Write},
@@ -72,14 +72,8 @@ pub(crate) fn tester(args: TesterArgs) -> Result<(), ErrorString> {
     let kernel_target_dir = Path::new("target")
         .canonicalize()
         .expect("failed to canonicalize target dir"); // TODO
-    let kernel_target_json = Path::new("x86_64-blog_os.json")
-        .canonicalize()
-        .expect("failed to canonicalize target.json"); // TODO
-    let kernel_target_json_triple = kernel_target_json
-        .file_stem()
-        .expect("kernel target json has no valid file stem");
 
-    let out_dir = kernel_target_dir.join("integration-tests").join(&test_name);
+    let out_dir = kernel_target_dir.join("bootimage").join("integration-tests").join(&test_name);
     fs::create_dir_all(&out_dir).expect("failed to create out dir");
 
     let manifest_path = out_dir.join("Cargo.toml");
@@ -110,7 +104,9 @@ path = "{test_path}"
     cmd.arg("--manifest-path").arg(&manifest_path);
     cmd.arg("--target-dir").arg(&kernel_target_dir);
     cmd.env("SYSROOT_DIR", &kernel_target_dir.join("sysroot")); // for cargo-xbuild
-    cmd.arg("--target").arg(&kernel_target_json); // TODO remove when default targets are canonicalized properly
+    if let Some(target) = args.target.as_ref().or(config.default_target.as_ref()) {
+        cmd.arg("--target").arg(target);
+    }
     let output = cmd.output().expect("failed to run cargo xbuild");
     if !output.status.success() {
         io::stderr()
@@ -119,10 +115,25 @@ path = "{test_path}"
         process::exit(1);
     }
 
-    let executable = kernel_target_dir
-        .join(&kernel_target_json_triple)
-        .join("debug")
-        .join(&test_name);
+    let kernel_target_triple = {
+        match args.target.or(config.default_target) {
+            None => cargo_config::default_target_triple(kernel_root_path, true)?,
+            Some(ref target) if target.ends_with(".json") => {
+                Some(Path::new(target).file_stem().expect("kernel target json has no valid file stem").to_str().expect("invalid unicode").to_owned())
+            }
+            Some(triple) => Some(triple),
+        }
+    };
+
+    let executable = {
+        let mut path = kernel_target_dir.clone();
+        if let Some(triple) = kernel_target_triple {
+            path.push(triple);
+        }
+        path.push("debug");
+        path.push(&test_name);
+        path
+    };
     let bootimage_bin_path = out_dir.join(format!("bootimage-{}.bin", test_name));
 
     builder.create_bootimage(&executable, &bootimage_bin_path, true)?;
