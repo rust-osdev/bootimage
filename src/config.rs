@@ -17,7 +17,7 @@ pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorString>
 }
 
 pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorString> {
-    use std::{convert::TryFrom, fs::File, io::Read};
+    use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
         File::open(&manifest_path)
@@ -54,10 +54,11 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorS
     for (key, value) in metadata {
         match (key.as_str(), value.clone()) {
             ("default-target", Value::String(s)) => config.default_target = From::from(s),
-            ("test-timeout", Value::Integer(s)) => {
-                config.test_timeout = u64::try_from(s)
-                    .map_err(|err| format!("test-timeout is not valid: {}", err))?
-                    .into()
+            ("test-timeout", Value::Integer(timeout)) if timeout.is_negative() => {
+                Err(format!("test-timeout must not be negative"))?
+            }
+            ("test-timeout", Value::Integer(timeout)) => {
+                config.test_timeout = Some(timeout as u64);
             }
             ("run-command", Value::Array(array)) => {
                 let mut command = Vec::new();
