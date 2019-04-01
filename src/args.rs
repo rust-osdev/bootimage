@@ -30,11 +30,7 @@ pub(crate) fn parse_args() -> Result<Command, ErrorString> {
             cmd => cmd,
         }),
         Some("runner") => parse_runner_args(args),
-        Some("tester") => parse_runner_args(args).map(|cmd| match cmd {
-            Command::Runner(args) => Command::Tester(TesterArgs::from(args)),
-            Command::RunnerHelp => Command::TesterHelp,
-            other => other,
-        }),
+        Some("tester") => parse_tester_args(args),
         Some("--help") | Some("-h") => Ok(Command::Help),
         Some("--version") => Ok(Command::Version),
         _ => Ok(Command::NoSubcommand),
@@ -252,7 +248,7 @@ where
     Ok(Command::Runner(RunnerArgs {
         executable,
         run_command,
-        run_args: run_args,
+        run_args,
     }))
 }
 
@@ -263,17 +259,59 @@ pub struct RunnerArgs {
     pub run_args: Option<Vec<String>>,
 }
 
+fn parse_tester_args<A>(args: A) -> Result<Command, ErrorString>
+where
+    A: Iterator<Item = String>,
+{
+    let mut arg_iter = args.into_iter().fuse();
+    let test_path = PathBuf::from(
+        arg_iter
+            .next()
+            .ok_or("excepted path to test source file as first argument")?,
+    )
+    .canonicalize()
+    .map_err(|err| format!("Failed to canonicalize test path: {}", err))?;
+    let mut run_command = None;
+    let mut target = None;
+
+    loop {
+        match arg_iter.next().as_ref().map(|s| s.as_str()) {
+            Some("--command") => {
+                let old = mem::replace(&mut run_command, Some(arg_iter.collect()));
+                if !old.is_none() {
+                    Err("multiple `--command` arguments")?;
+                }
+                break;
+            }
+            Some("--target") => {
+                let old = mem::replace(&mut target, arg_iter.next());
+                if !old.is_none() {
+                    Err("multiple `--target` arguments")?;
+                }
+                break;
+            }
+            Some("--help") | Some("-h") => {
+                return Ok(Command::TesterHelp);
+            }
+            Some("--version") => {
+                return Ok(Command::Version);
+            }
+            None => break,
+            Some(arg) => Err(format!("unexpected argument `{}`", arg))?,
+        }
+    }
+
+    Ok(Command::Tester(TesterArgs {
+        test_path,
+        run_command,
+        target,
+    }))
+}
+
 #[derive(Debug, Clone)]
 pub struct TesterArgs {
     pub test_path: PathBuf,
     pub run_command: Option<Vec<String>>,
+    pub target: Option<String>,
 }
 
-impl From<RunnerArgs> for TesterArgs {
-    fn from(args: RunnerArgs) -> Self {
-        Self {
-            test_path: args.executable,
-            run_command: args.run_command,
-        }
-    }
-}
