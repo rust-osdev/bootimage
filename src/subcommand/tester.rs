@@ -157,7 +157,7 @@ path = "{test_path}"
     let mut child = command
         .spawn()
         .map_err(|e| format!("Failed to launch QEMU: {:?}\n{}", command, e))?;
-    let timeout = Duration::from_secs(config.test_timeout);
+    let timeout = Duration::from_secs(config.test_timeout.into());
     let (exit_status, output) = match child
         .wait_timeout(timeout)
         .map_err(|e| format!("Failed to wait with timeout: {}", e))?

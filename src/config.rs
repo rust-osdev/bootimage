@@ -7,7 +7,7 @@ pub struct Config {
     pub manifest_path: PathBuf,
     pub default_target: Option<String>,
     pub run_command: Vec<String>,
-    pub test_timeout: u64,
+    pub test_timeout: u32,
 }
 
 pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorString> {
@@ -58,7 +58,7 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorS
                 Err(format!("test-timeout must not be negative"))?
             }
             ("test-timeout", Value::Integer(timeout)) => {
-                config.test_timeout = Some(timeout as u64);
+                config.test_timeout = Some(timeout as u32);
             }
             ("run-command", Value::Array(array)) => {
                 let mut command = Vec::new();
@@ -85,7 +85,7 @@ struct ConfigBuilder {
     manifest_path: Option<PathBuf>,
     default_target: Option<String>,
     run_command: Option<Vec<String>>,
-    test_timeout: Option<u64>,
+    test_timeout: Option<u32>,
 }
 
 impl Into<Config> for ConfigBuilder {
