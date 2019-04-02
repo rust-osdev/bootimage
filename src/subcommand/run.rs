@@ -8,7 +8,8 @@ pub(crate) fn run(mut args: Args) -> Result<i32, ErrorString> {
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
 
-    let bootimages = build::build_impl(&builder, &mut args, false)?;
+    let quiet = args.quiet;
+    let bootimages = build::build_impl(&builder, &mut args, quiet)?;
     let bootimage_path = bootimages.first().ok_or("no bootimages created")?;
     if bootimages.len() > 1 {
         Err("more than one bootimage created")?;

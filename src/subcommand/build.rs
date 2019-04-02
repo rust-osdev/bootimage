@@ -6,7 +6,8 @@ pub(crate) fn build(mut args: Args) -> Result<(), ErrorString> {
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
 
-    build_impl(&builder, &mut args, false).map(|_| ())
+    let quiet = args.quiet;
+    build_impl(&builder, &mut args, quiet).map(|_| ())
 }
 
 pub(crate) fn build_impl(

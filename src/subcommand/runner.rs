@@ -19,7 +19,7 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorString> {
         parent.join(format!("bootimage-{}.bin", file_stem))
     };
 
-    builder.create_bootimage(&args.executable, &bootimage_bin, false)?;
+    builder.create_bootimage(&args.executable, &bootimage_bin, args.quiet)?;
 
     let mut command = process::Command::new(&config.run_command[0]);
     for arg in &config.run_command[1..] {

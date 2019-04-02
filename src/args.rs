@@ -47,6 +47,7 @@ where
     let mut cargo_args = Vec::new();
     let mut run_args = Vec::new();
     let mut run_args_started = false;
+    let mut quiet = false;
     {
         fn set<T>(arg: &mut Option<T>, value: Option<T>) -> Result<(), ErrorString> {
             let previous = mem::replace(arg, value);
@@ -68,6 +69,9 @@ where
                 }
                 "--version" => {
                     return Ok(Command::Version);
+                }
+                "--quiet" => {
+                    quiet = true;
                 }
                 "--bin" => {
                     let next = arg_iter.next();
@@ -142,6 +146,7 @@ where
         target,
         manifest_path,
         release: release.unwrap_or(false),
+        quiet,
     }))
 }
 
@@ -151,6 +156,8 @@ pub struct Args {
     pub cargo_args: Vec<String>,
     /// All arguments that are passed to the runner.
     pub run_args: Vec<String>,
+    /// Suppress any output to stdout.
+    pub quiet: bool,
     /// The manifest path (also present in `cargo_args`).
     manifest_path: Option<PathBuf>,
     /// The name of the binary (passed `--bin` argument) (also present in `cargo_args`).
@@ -207,6 +214,8 @@ where
     A: Iterator<Item = String>,
 {
     let mut executable = None;
+    let mut quiet = false;
+
     let mut arg_iter = args.into_iter().fuse();
 
     loop {
@@ -216,6 +225,9 @@ where
             }
             Some("--version") => {
                 return Ok(Command::Version);
+            }
+            Some("--quiet") => {
+                quiet = true;
             }
             Some(exe) if executable.is_none() => {
                 let path = Path::new(exe);
@@ -235,11 +247,14 @@ where
 
     Ok(Command::Runner(RunnerArgs {
         executable: executable.ok_or("excepted path to kernel executable as first argument")?,
+        quiet,
     }))
 }
 
 #[derive(Debug, Clone)]
 pub struct RunnerArgs {
     pub executable: PathBuf,
+    /// Suppress any output to stdout.
+    pub quiet: bool,
 }
 
