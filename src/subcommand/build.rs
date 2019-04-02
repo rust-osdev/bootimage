@@ -15,7 +15,7 @@ pub(crate) fn build_impl(
     args: &Args,
     quiet: bool,
 ) -> Result<Vec<PathBuf>, ErrorMessage> {
-    run_cargo_fetch(&args);
+    run_cargo_fetch(&args).map_err(|()| "cargo fetch failed")?;
 
     let executables = builder.build_kernel(&args.cargo_args, quiet)?;
     if executables.len() == 0 {
@@ -40,14 +40,16 @@ pub(crate) fn build_impl(
     Ok(bootimages)
 }
 
-fn run_cargo_fetch(args: &Args) {
+fn run_cargo_fetch(args: &Args) -> Result<(), ()> {
     let mut command = process::Command::new("cargo");
     command.arg("fetch");
     if let Some(manifest_path) = args.manifest_path() {
         command.arg("--manifest-path");
         command.arg(manifest_path);
     }
-    if !command.status().map(|s| s.success()).unwrap_or(false) {
-        process::exit(1);
+    if command.status().map(|s| s.success()).unwrap_or(false) {
+        Ok(())
+    } else {
+        Err(())
     }
 }

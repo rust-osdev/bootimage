@@ -1,4 +1,4 @@
-use std::process;
+use crate::ErrorMessage;
 
 const HELP: &str = include_str!("help.txt");
 const BUILD_HELP: &str = include_str!("build_help.txt");
@@ -31,9 +31,7 @@ pub(crate) fn test_help() {
     print!("{}", TEST_HELP);
 }
 
-pub(crate) fn no_subcommand() -> ! {
-    println!("Please invoke `bootimage` with a subcommand (e.g. `bootimage build`).");
-    println!();
-    println!("See `bootimage --help` for more information.");
-    process::exit(1);
+pub(crate) fn no_subcommand() -> ErrorMessage {
+    "Please invoke `bootimage` with a subcommand (e.g. `bootimage build`).\n\n\
+    See `bootimage --help` for more information.".into()
 }

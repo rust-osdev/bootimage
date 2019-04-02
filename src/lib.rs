@@ -64,7 +64,6 @@ pub fn run() -> Result<Option<i32>, ErrorMessage> {
         Command::Run(args) => subcommand::run::run(args).map(Some),
         Command::Test(args) => subcommand::test::test(args).map(none),
         Command::Runner(args) => subcommand::runner::runner(args).map(Some),
-        Command::NoSubcommand => help::no_subcommand(),
         Command::Help => Ok(help::help()).map(none),
         Command::BuildHelp => Ok(help::build_help()).map(none),
         Command::CargoBootimageHelp => Ok(help::cargo_bootimage_help()).map(none),
@@ -72,6 +71,7 @@ pub fn run() -> Result<Option<i32>, ErrorMessage> {
         Command::RunnerHelp => Ok(help::runner_help()).map(none),
         Command::TestHelp => Ok(help::test_help()).map(none),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))).map(none),
+        Command::NoSubcommand => Err(help::no_subcommand()),
     }
 }
 

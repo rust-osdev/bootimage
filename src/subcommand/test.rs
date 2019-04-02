@@ -94,7 +94,7 @@ pub(crate) fn test(mut args: Args) -> Result<(), ErrorMessage> {
         for test in tests.iter().filter(|t| t.1 != TestResult::Ok) {
             writeln!(io::stderr(), "    {}: {:?}", test.0, test.1)?;
         }
-        process::exit(1);
+        Err("Some tests failed".into())
     }
 }
 
