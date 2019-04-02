@@ -1,12 +1,25 @@
+//! Parses the `package.metadata.bootimage` configuration table
+
 use crate::ErrorMessage;
 use std::path::Path;
 use toml::Value;
 
+/// Represents the `package.metadata.bootimage` configuration table
+///
+/// The bootimage crate can be configured through a `package.metadata.bootimage` table
+/// in the `Cargo.toml` file of the kernel. This struct represents the parsed configuration
+/// options.
 #[derive(Debug, Clone)]
 pub struct Config {
+    /// This target is used if no `--target` argument is passed
     pub default_target: Option<String>,
+    /// The run command that is invoked on `bootimage run` or `bootimage runner`
+    ///
+    /// The substring "{}" will be replaced with the path to the bootable disk image.
     pub run_command: Vec<String>,
+    /// Additional arguments passed to the runner on `bootimage run` or `bootimage runner`
     pub run_args: Option<Vec<String>>,
+    /// The timeout for running an integration test through `bootimage test` in seconds
     pub test_timeout: u32,
     non_exhaustive: (),
 }

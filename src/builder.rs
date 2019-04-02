@@ -1,15 +1,21 @@
+//! Provides functions to build the kernel and the bootloader.
+
 use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
     process::{self, Command},
 };
 
+/// Abstracts a build environment and provides methods for building the kernel and creating a
+/// bootimage.
 pub struct Builder {
     kernel_manifest_path: PathBuf,
     kernel_metadata: cargo_metadata::Metadata,
 }
 
 impl Builder {
+    /// Creates a new Builder by searching for the kernel's Cargo manifest and running
+    /// `cargo metadata` on it.
     pub fn new(manifest_path: Option<PathBuf>) -> Result<Self, BuilderError> {
         let kernel_manifest_path =
             manifest_path.unwrap_or(locate_cargo_manifest::locate_manifest()?);
@@ -22,20 +28,24 @@ impl Builder {
         })
     }
 
+    /// Returns the path to the `Cargo.toml` file of the kernel.
     pub fn kernel_manifest_path(&self) -> &Path {
         &self.kernel_manifest_path
     }
 
+    /// Returns the directory that contains the `Cargo.toml` of the kernel.
     pub fn kernel_root(&self) -> &Path {
         self.kernel_manifest_path
             .parent()
             .expect("kernel manifest has no parent directory")
     }
 
+    /// Returns a reference to the cargo metadata object.
     pub fn kernel_metadata(&self) -> &cargo_metadata::Metadata {
         &self.kernel_metadata
     }
 
+    /// Returns a reference to the kernel package in the `cargo metadata` output.
     pub fn kernel_package(&self) -> Result<&cargo_metadata::Package, String> {
         let mut packages = self.kernel_metadata.packages.iter();
         let kernel_package = packages.find(|p| &p.manifest_path == &self.kernel_manifest_path);
@@ -45,6 +55,12 @@ impl Builder {
         ))
     }
 
+    /// Builds the kernel by executing `cargo xbuild` with the given arguments.
+    ///
+    /// Returns a list of paths to all built executables. For crates with only a single binary,
+    /// the returned list contains only a single element.
+    ///
+    /// If the quiet argument is set to true, all output to stdout is suppressed.
     pub fn build_kernel(
         &self,
         args: &[String],
@@ -110,6 +126,11 @@ impl Builder {
         Ok(executables)
     }
 
+    /// Creates a bootimage by combining the given kernel binary with the bootloader.
+    ///
+    /// Places the resulting bootable disk image at the given `output_bin_path`.
+    ///
+    /// If the quiet argument is set to true, all output to stdout is suppressed.
     pub fn create_bootimage(
         &self,
         kernel_bin_path: &Path,
@@ -284,6 +305,7 @@ impl Builder {
     }
 }
 
+/// Represents an error that occurred while creating a new `Builder`.
 #[derive(Debug)]
 pub enum BuilderError {
     /// Failed to locate cargo manifest
@@ -309,6 +331,7 @@ impl fmt::Display for BuilderError {
     }
 }
 
+/// Represents an error that occurred when building the kernel.
 #[derive(Debug)]
 pub enum BuildKernelError {
     /// Could not find kernel package in cargo metadata, required for retrieving kernel crate name
@@ -320,11 +343,16 @@ pub enum BuildKernelError {
         /// The I/O error that occured
         error: io::Error,
     },
+    /// Could not find the `cargo xbuild` tool. Perhaps it is not installed?
     XbuildNotFound,
+    /// Running `cargo xbuild` failed.
     XbuildFailed {
+        /// The standard error output.
         stderr: Vec<u8>,
     },
+    /// The output of `cargo xbuild --message-format=json` was not valid UTF-8
     XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
+    /// The output of `cargo xbuild --message-format=json` was not valid JSON
     XbuildJsonOutputInvalidJson(json::Error),
     #[doc(hidden)]
     __NonExhaustive,
@@ -357,6 +385,7 @@ impl fmt::Display for BuildKernelError {
     }
 }
 
+/// Represents an error that occurred when creating a bootimage.
 #[derive(Debug)]
 pub enum CreateBootimageError {
     /// Could not find some required information in the `cargo metadata` output
@@ -368,7 +397,9 @@ pub enum CreateBootimageError {
     BootloaderNotFound,
     /// Bootloader dependency has not the right format
     BootloaderInvalid(String),
+    /// Building the bootloader failed
     BootloaderBuildFailed {
+        /// The `cargo xbuild` output to standard error
         stderr: Vec<u8>,
     },
     /// An unexpected I/O error occurred
@@ -384,9 +415,12 @@ pub enum CreateBootimageError {
     LlvmObjcopyNotFound,
     /// The `llvm-objcopy` command failed
     ObjcopyFailed {
+        /// The output of `llvm-objcopy` to standard error
         stderr: Vec<u8>,
     },
+    /// The output of `cargo xbuild --message-format=json` was not valid UTF-8
     XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
+    /// The output of `cargo xbuild --message-format=json` was not valid JSON
     XbuildJsonOutputInvalidJson(json::Error),
     #[doc(hidden)]
     __NonExhaustive,

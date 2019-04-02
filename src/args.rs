@@ -1,3 +1,5 @@
+//! Parses command line arguments.
+
 use crate::{config::Config, Command, ErrorMessage};
 use std::path::{Path, PathBuf};
 use std::{env, mem};

@@ -1,8 +1,14 @@
+//! Provides functions to create a bootable OS image from a kernel binary.
+//!
+//! This crate is mainly built as a binary tool. Run `cargo install bootimage` to install it.
+
+#![warn(missing_docs)]
+
 use args::{Args, RunnerArgs};
 use std::{fmt, process};
 
-pub mod builder;
 mod args;
+pub mod builder;
 pub mod config;
 pub mod help;
 
@@ -23,6 +29,13 @@ enum Command {
     Version,
 }
 
+/// The entry point for the binaries.
+///
+/// We support two binaries, `bootimage` and `cargo-bootimage` that both just
+/// call into this function.
+///
+/// This function is just a small wrapper around [`run`] that prints error messages
+/// and exits with the correct exit code.
 pub fn lib_main() {
     match run() {
         Err(err) => {
@@ -36,6 +49,13 @@ pub fn lib_main() {
     }
 }
 
+/// Run the invoked command.
+///
+/// This function parses the arguments and invokes the chosen subcommand.
+///
+/// On success, it optionally returns an exit code. This feature is used by the
+/// `run` and `runner` subcommand to pass through the exit code of the invoked
+/// run command.
 pub fn run() -> Result<Option<i32>, ErrorMessage> {
     let command = args::parse_args()?;
     let none = |()| None;
@@ -54,7 +74,12 @@ pub fn run() -> Result<Option<i32>, ErrorMessage> {
     }
 }
 
+/// A simple error message that can be created from every type that implements `fmt::Display`.
+///
+/// We use this error type for the CLI interface, where text based, human readable error messages
+/// make sense. For the library part of this crate, we use custom error enums.
 pub struct ErrorMessage {
+    /// The actual error message
     pub message: Box<dyn fmt::Display + Send>,
 }
 
