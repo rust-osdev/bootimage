@@ -198,7 +198,3 @@ jobs:
       if [ $? -eq 109 ]; then (exit 0); else (exit 1); fi
     workingDirectory: example-kernels/runner
     displayName: 'Run `cargo xrun` for "runner" kernel'
-
-  - script: cargo test
-    workingDirectory: example-kernels/tester
-    displayName: 'Run `cargo test` for "tester" kernel'
