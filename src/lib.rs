@@ -10,7 +10,7 @@ use std::{fmt, process};
 mod args;
 pub mod builder;
 pub mod config;
-pub mod help;
+mod help;
 
 mod subcommand;
 
