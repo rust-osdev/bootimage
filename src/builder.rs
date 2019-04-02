@@ -96,8 +96,12 @@ impl Builder {
             });
         }
         let mut executables = Vec::new();
-        for line in String::from_utf8(output.stdout).unwrap().lines() {
-            let mut artifact = json::parse(line).unwrap();
+        for line in String::from_utf8(output.stdout)
+            .map_err(BuildKernelError::XbuildJsonOutputInvalidUtf8)?
+            .lines()
+        {
+            let mut artifact =
+                json::parse(line).map_err(BuildKernelError::XbuildJsonOutputInvalidJson)?;
             if let Some(executable) = artifact["executable"].take_string() {
                 executables.push(PathBuf::from(executable));
             }
@@ -233,8 +237,12 @@ impl Builder {
             });
         }
         let mut bootloader_elf_path = None;
-        for line in String::from_utf8(output.stdout).unwrap().lines() {
-            let mut artifact = json::parse(line).unwrap();
+        for line in String::from_utf8(output.stdout)
+            .map_err(CreateBootimageError::XbuildJsonOutputInvalidUtf8)?
+            .lines()
+        {
+            let mut artifact =
+                json::parse(line).map_err(CreateBootimageError::XbuildJsonOutputInvalidJson)?;
             if let Some(executable) = artifact["executable"].take_string() {
                 if bootloader_elf_path
                     .replace(PathBuf::from(executable))
@@ -316,10 +324,8 @@ pub enum BuildKernelError {
     XbuildFailed {
         stderr: Vec<u8>,
     },
-    CargoConfigInvalid {
-        path: PathBuf,
-        error: String,
-    },
+    XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
+    XbuildJsonOutputInvalidJson(json::Error),
 }
 
 impl fmt::Display for BuildKernelError {
@@ -338,9 +344,12 @@ impl fmt::Display for BuildKernelError {
             BuildKernelError::XbuildFailed{stderr} => {
                 writeln!(f, "Kernel build failed:\n{}", String::from_utf8_lossy(stderr))
             }
-            BuildKernelError::CargoConfigInvalid{path,error} => {
-                writeln!(f, "Failed to read cargo config at {}:\n{}", path.display(), error)
-            },
+            BuildKernelError::XbuildJsonOutputInvalidUtf8(err) => {
+                writeln!(f, "Output of kernel build with --message-format=json is not valid UTF-8:\n{}", err)
+            }
+            BuildKernelError::XbuildJsonOutputInvalidJson(err) => {
+                writeln!(f, "Output of kernel build with --message-format=json is not valid JSON:\n{}", err)
+            }
         }
     }
 }
@@ -374,6 +383,8 @@ pub enum CreateBootimageError {
     ObjcopyFailed {
         stderr: Vec<u8>,
     },
+    XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
+    XbuildJsonOutputInvalidJson(json::Error),
 }
 
 impl fmt::Display for CreateBootimageError {
@@ -421,6 +432,16 @@ impl fmt::Display for CreateBootimageError {
                 f,
                 "Failed to run `llvm-objcopy`: {}",
                 String::from_utf8_lossy(stderr)
+            ),
+            CreateBootimageError::XbuildJsonOutputInvalidUtf8(err) => writeln!(
+                f,
+                "Output of bootloader build with --message-format=json is not valid UTF-8:\n{}",
+                err
+            ),
+            CreateBootimageError::XbuildJsonOutputInvalidJson(err) => writeln!(
+                f,
+                "Output of bootloader build with --message-format=json is not valid JSON:\n{}",
+                err
             ),
         }
     }
