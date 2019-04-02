@@ -193,7 +193,9 @@ jobs:
     workingDirectory: example-kernels/testing-qemu-exit-code
     displayName: 'Run `bootimage test` for "testing-qemu-exit-code" kernel'
 
-  - script: cargo xrun
+  - bash: |
+      cargo xrun
+      if [ $? -eq 109 ]; then (exit 0); else (exit 1); fi
     workingDirectory: example-kernels/runner
     displayName: 'Run `cargo xrun` for "runner" kernel'
 
