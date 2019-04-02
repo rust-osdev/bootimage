@@ -1,7 +1,7 @@
-use crate::{args::Args, builder::Builder, config, ErrorString};
+use crate::{args::Args, builder::Builder, config, ErrorMessage};
 use std::{path::PathBuf, process};
 
-pub(crate) fn build(mut args: Args) -> Result<(), ErrorString> {
+pub(crate) fn build(mut args: Args) -> Result<(), ErrorMessage> {
     let builder = Builder::new(args.manifest_path().clone())?;
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
@@ -14,7 +14,7 @@ pub(crate) fn build_impl(
     builder: &Builder,
     args: &Args,
     quiet: bool,
-) -> Result<Vec<PathBuf>, ErrorString> {
+) -> Result<Vec<PathBuf>, ErrorMessage> {
     run_cargo_fetch(&args);
 
     let executables = builder.build_kernel(&args.cargo_args, quiet)?;

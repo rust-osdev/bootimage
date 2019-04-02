@@ -20,7 +20,7 @@
 - Move crate to 2018 edition
 - Refactor and cleanup the code
 - Remove the dependency on `failure`
-    - Use a custom `ErrorString` type instead
+    - Use a custom `ErrorMessage` type instead
 - Add a new `run-args` config key
 - Add a new `--quiet` argument to suppress output
 

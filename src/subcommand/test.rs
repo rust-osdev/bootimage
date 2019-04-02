@@ -1,9 +1,9 @@
-use crate::{args::Args, builder::Builder, config, subcommand::build, ErrorString};
+use crate::{args::Args, builder::Builder, config, subcommand::build, ErrorMessage};
 use rayon::prelude::*;
 use std::{fs, io, io::Write, process, time::Duration};
 use wait_timeout::ChildExt;
 
-pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {
+pub(crate) fn test(mut args: Args) -> Result<(), ErrorMessage> {
     let builder = Builder::new(args.manifest_path().clone())?;
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
@@ -83,7 +83,7 @@ pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {
 
             Ok((target.name.clone(), test_result))
         })
-        .collect::<Result<Vec<(String, TestResult)>, ErrorString>>()?;
+        .collect::<Result<Vec<(String, TestResult)>, ErrorMessage>>()?;
 
     println!("");
     if tests.iter().all(|t| t.1 == TestResult::Ok) {
@@ -102,7 +102,7 @@ fn handle_exit_status(
     exit_status: process::ExitStatus,
     output: &str,
     target_name: &str,
-) -> Result<TestResult, ErrorString> {
+) -> Result<TestResult, ErrorMessage> {
     match exit_status.code() {
         None => {
             writeln!(io::stderr(), "FAIL: No Exit Code.")?;

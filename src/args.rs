@@ -1,8 +1,8 @@
-use crate::{config::Config, Command, ErrorString};
+use crate::{config::Config, Command, ErrorMessage};
 use std::path::{Path, PathBuf};
 use std::{env, mem};
 
-pub(crate) fn parse_args() -> Result<Command, ErrorString> {
+pub(crate) fn parse_args() -> Result<Command, ErrorMessage> {
     let mut args = env::args();
     let executable_name = args.next().ok_or("no first argument (executable name)")?;
     let first = args.next();
@@ -36,7 +36,7 @@ pub(crate) fn parse_args() -> Result<Command, ErrorString> {
     }
 }
 
-fn parse_build_args<A>(args: A) -> Result<Command, ErrorString>
+fn parse_build_args<A>(args: A) -> Result<Command, ErrorMessage>
 where
     A: Iterator<Item = String>,
 {
@@ -49,7 +49,7 @@ where
     let mut run_args_started = false;
     let mut quiet = false;
     {
-        fn set<T>(arg: &mut Option<T>, value: Option<T>) -> Result<(), ErrorString> {
+        fn set<T>(arg: &mut Option<T>, value: Option<T>) -> Result<(), ErrorMessage> {
             let previous = mem::replace(arg, value);
             if previous.is_some() {
                 Err("multiple arguments of same type provided")?
@@ -209,7 +209,7 @@ impl Args {
     }
 }
 
-fn parse_runner_args<A>(args: A) -> Result<Command, ErrorString>
+fn parse_runner_args<A>(args: A) -> Result<Command, ErrorMessage>
 where
     A: Iterator<Item = String>,
 {
@@ -257,4 +257,3 @@ pub struct RunnerArgs {
     /// Suppress any output to stdout.
     pub quiet: bool,
 }
-

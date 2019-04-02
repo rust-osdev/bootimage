@@ -36,7 +36,7 @@ pub fn lib_main() {
     }
 }
 
-pub fn run() -> Result<Option<i32>, ErrorString> {
+pub fn run() -> Result<Option<i32>, ErrorMessage> {
     let command = args::parse_args()?;
     let none = |()| None;
     match command {
@@ -54,22 +54,22 @@ pub fn run() -> Result<Option<i32>, ErrorString> {
     }
 }
 
-pub struct ErrorString {
+pub struct ErrorMessage {
     pub message: Box<dyn fmt::Display + Send>,
 }
 
-impl fmt::Debug for ErrorString {
+impl fmt::Debug for ErrorMessage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.message.fmt(f)
     }
 }
 
-impl<T> From<T> for ErrorString
+impl<T> From<T> for ErrorMessage
 where
     T: fmt::Display + Send + 'static,
 {
     fn from(err: T) -> Self {
-        ErrorString {
+        ErrorMessage {
             message: Box::new(err),
         }
     }

@@ -1,7 +1,7 @@
-use crate::{args::Args, builder::Builder, config, ErrorString};
+use crate::{args::Args, builder::Builder, config, ErrorMessage};
 use std::process;
 
-pub(crate) fn run(mut args: Args) -> Result<i32, ErrorString> {
+pub(crate) fn run(mut args: Args) -> Result<i32, ErrorMessage> {
     use crate::subcommand::build;
 
     let builder = Builder::new(args.manifest_path().clone())?;
@@ -23,7 +23,7 @@ pub(crate) fn run(mut args: Args) -> Result<i32, ErrorString> {
                 "{}",
                 bootimage_path
                     .to_str()
-                    .ok_or(ErrorString::from("bootimage path is not valid unicode"))?,
+                    .ok_or(ErrorMessage::from("bootimage path is not valid unicode"))?,
             ),
         );
     }
@@ -32,7 +32,7 @@ pub(crate) fn run(mut args: Args) -> Result<i32, ErrorString> {
     }
     command.args(&args.run_args);
     let exit_status = command.status().map_err(|err| {
-        ErrorString::from(format!(
+        ErrorMessage::from(format!(
             "Failed to execute run command `{:?}`: {}",
             command, err
         ))

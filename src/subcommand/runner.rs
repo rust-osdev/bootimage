@@ -1,7 +1,7 @@
-use crate::{args::RunnerArgs, builder::Builder, config, ErrorString};
+use crate::{args::RunnerArgs, builder::Builder, config, ErrorMessage};
 use std::process;
 
-pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorString> {
+pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
     let builder = Builder::new(None)?;
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
 

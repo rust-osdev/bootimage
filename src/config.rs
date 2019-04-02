@@ -1,4 +1,4 @@
-use crate::ErrorString;
+use crate::ErrorMessage;
 use std::path::PathBuf;
 use toml::Value;
 
@@ -11,13 +11,13 @@ pub struct Config {
     pub test_timeout: u32,
 }
 
-pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorString> {
+pub(crate) fn read_config(manifest_path: PathBuf) -> Result<Config, ErrorMessage> {
     let config = read_config_inner(manifest_path)
         .map_err(|err| format!("Failed to read bootimage configuration: {:?}", err))?;
     Ok(config)
 }
 
-pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorString> {
+pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorMessage> {
     use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
