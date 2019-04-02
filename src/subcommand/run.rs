@@ -26,6 +26,9 @@ pub(crate) fn run(mut args: Args) -> Result<i32, ErrorString> {
             ),
         );
     }
+    if let Some(run_args) = config.run_args {
+        command.args(run_args);
+    }
     command.args(&args.run_args);
     let exit_status = command.status().map_err(|err| {
         ErrorString::from(format!(
