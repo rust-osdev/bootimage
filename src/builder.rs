@@ -326,6 +326,8 @@ pub enum BuildKernelError {
     },
     XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
     XbuildJsonOutputInvalidJson(json::Error),
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 impl fmt::Display for BuildKernelError {
@@ -350,6 +352,7 @@ impl fmt::Display for BuildKernelError {
             BuildKernelError::XbuildJsonOutputInvalidJson(err) => {
                 writeln!(f, "Output of kernel build with --message-format=json is not valid JSON:\n{}", err)
             }
+            BuildKernelError::__NonExhaustive => panic!("__NonExhaustive variant constructed"),
         }
     }
 }
@@ -385,6 +388,8 @@ pub enum CreateBootimageError {
     },
     XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
     XbuildJsonOutputInvalidJson(json::Error),
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 impl fmt::Display for CreateBootimageError {
@@ -443,6 +448,7 @@ impl fmt::Display for CreateBootimageError {
                 "Output of bootloader build with --message-format=json is not valid JSON:\n{}",
                 err
             ),
+            CreateBootimageError::__NonExhaustive => panic!("__NonExhaustive variant constructed"),
         }
     }
 }
