@@ -9,6 +9,7 @@
 - Remove support for `bootloader_precompiled`
   - The `bootloader` crate compiles fine on all architectures for some time and should be prefered
 - Require the `llvm-tools-preview` rustup component
+- Pass the QEMU exit code in `bootimage run`
 
 ## Other
 
@@ -20,6 +21,8 @@
 - Refactor and cleanup the code
 - Remove the dependency on `failure`
     - Use a custom `ErrorString` type instead
+- Add a new `run-args` config key
+- Add a new `--quiet` argument to suppress output
 
 # 0.6.6
 
