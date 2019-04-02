@@ -1,7 +1,7 @@
 use crate::{args::RunnerArgs, builder::Builder, ErrorString};
 use std::{fs, process};
 
-pub(crate) fn runner(args: RunnerArgs) -> Result<(), ErrorString> {
+pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorString> {
     let builder = Builder::new(None)?;
 
     let bootimage_bin = {
@@ -58,16 +58,5 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<(), ErrorString> {
         .output()
         .map_err(|e| format!("Failed to execute `{:?}`: {}", command, e))?;
 
-    if !output.status.success() {
-        return Err(ErrorString {
-            exit_code: output.status.code().unwrap_or(1),
-            message: Box::new(format!(
-                "Command `{:?}` failed:\n{}",
-                command,
-                String::from_utf8_lossy(&output.stderr)
-            )),
-        });
-    }
-
-    Ok(())
+    Ok(output.status.code().unwrap_or(1))
 }

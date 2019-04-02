@@ -1,7 +1,7 @@
 use crate::{args::Args, builder::Builder, config, ErrorString};
 use std::process;
 
-pub(crate) fn run(mut args: Args) -> Result<(), ErrorString> {
+pub(crate) fn run(mut args: Args) -> Result<i32, ErrorString> {
     use crate::subcommand::build;
 
     let builder = Builder::new(args.manifest_path().clone())?;
@@ -27,11 +27,11 @@ pub(crate) fn run(mut args: Args) -> Result<(), ErrorString> {
         );
     }
     command.args(&args.run_args);
-    command.status().map_err(|err| {
+    let exit_status = command.status().map_err(|err| {
         ErrorString::from(format!(
             "Failed to execute run command `{:?}`: {}",
             command, err
         ))
     })?;
-    Ok(())
+    Ok(exit_status.code().unwrap_or(1))
 }
