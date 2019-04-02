@@ -86,7 +86,7 @@ edition = "2018"
 [workspace] # exclude this crate from parent workspaces
 
 [[bin]]
-name = "{test_name}"
+name = "bootimage-tester-{test_name}"
 path = "{test_path}"
 
 {dependency_table}
@@ -103,8 +103,7 @@ path = "{test_path}"
         let mut cmd = Command::new(&cargo);
         cmd.arg("xbuild");
         cmd.arg("--manifest-path").arg(&manifest_path);
-        cmd.arg("--target-dir")
-            .arg(&integration_test_dir.join("target"));
+        cmd.arg("--target-dir").arg(&kernel_target_dir);
         cmd.env("SYSROOT_DIR", &integration_test_dir.join("sysroot")); // for cargo-xbuild
 
         if let Some(target) = args.target.as_ref().or(config.default_target.as_ref()) {
