@@ -27,7 +27,7 @@ pub fn lib_main() {
     match run() {
         Err(err) => {
             eprintln!("Error: {}", err.message);
-            process::exit(err.exit_code);
+            process::exit(1);
         }
         Ok(Some(exit_code)) => {
             process::exit(exit_code);
@@ -56,7 +56,6 @@ pub fn run() -> Result<Option<i32>, ErrorString> {
 
 pub struct ErrorString {
     pub message: Box<dyn fmt::Display + Send>,
-    pub exit_code: i32,
 }
 
 impl fmt::Debug for ErrorString {
@@ -72,7 +71,6 @@ where
     fn from(err: T) -> Self {
         ErrorString {
             message: Box::new(err),
-            exit_code: 1,
         }
     }
 }
