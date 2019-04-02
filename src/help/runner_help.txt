@@ -1,17 +1,18 @@
 Creates a bootable disk image from a Rust kernel and launches it in QEMU
 
 USAGE:
-    bootimage run [BUILD_OPTS] -- [RUN_OPTS]        Build and run a disk image
+    bootimage runner EXECUTABLE        Convert and run the given EXECUTABLE
 
     (for other forms of usage see `bootimage --help`)
-    (for BUILD_OPTS see `bootimage build --help`)
 
-RUN_OPTS:
-    Any options are directly passed to the run command. Note that the run
-    options must be separated from the build options by a "--".
+    This subcommand can be used as a target runner in a `.cargo/config` file:
+    ```
+        [target.'cfg(target_os = "none")']
+        runner = "bootimage runner"
+    ```
 
 CONFIGURATION:
-    The behavior of `bootimage run` can be configured through a
+    The behavior of `bootimage runner` can be configured through a
     `[package.metadata.bootimage]` table in the `Cargo.toml`. The
     following options are available to configure run behavior:
 

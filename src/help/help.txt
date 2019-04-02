@@ -5,6 +5,10 @@ USAGE:
     bootimage build [BUILD_OPTS]                Create a bootable disk image
     bootimage run [BUILD_OPTS] -- [RUN_OPTS]    Build and run a disk image
     bootimage test [BUILD_OPTS]                 Runs integration tests
+    bootimage runner EXECUTABLE                 Convert and run an executable
+
+    cargo bootimage [BUILD_OPTS]                Create a bootable disk image
+                                                (equivalent to bootimage build)
 
 For more information about a subcommand run `bootimage [subcommand] --help`.
 

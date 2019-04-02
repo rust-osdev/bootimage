@@ -1,56 +1,41 @@
-use args::Args;
-use build;
-use failure::{Error, ResultExt};
+use crate::{args::Args, builder::Builder, config, subcommand::build, ErrorMessage};
 use rayon::prelude::*;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-use std::{fs, io, process};
+use std::{fs, io, io::Write, process, time::Duration};
 use wait_timeout::ChildExt;
 
-pub(crate) fn test(args: Args) -> Result<(), Error> {
-    let (args, config, metadata, root_dir, out_dir) = build::common_setup(args)?;
+pub(crate) fn test(mut args: Args) -> Result<(), ErrorMessage> {
+    let builder = Builder::new(args.manifest_path().clone())?;
+    let config = config::read_config(builder.kernel_manifest_path())?;
+    args.apply_default_target(&config, builder.kernel_root());
 
     let test_args = args.clone();
 
-    let test_config = {
-        let mut test_config = config.clone();
-        test_config.output = None;
-        test_config
-    };
-
-    let test_targets = metadata
-        .packages
-        .iter()
-        .find(|p| {
-            Path::new(&p.manifest_path)
-                .canonicalize()
-                .map(|path| path == config.manifest_path)
-                .unwrap_or(false)
-        })
-        .expect("Could not read crate name from cargo metadata")
+    let kernel_package = builder
+        .kernel_package()
+        .map_err(|key| format!("Kernel package not found it cargo metadata (`{}`)", key))?;
+    let test_target_iter = kernel_package
         .targets
         .iter()
-        .filter(|t| t.kind == ["bin"] && t.name.starts_with("test-"))
-        .map(|target| {
-            println!("BUILD: {}", target.name);
+        .filter(|t| t.kind == ["bin"] && t.name.starts_with("test-"));
 
-            let mut target_args = test_args.clone();
-            target_args.set_bin_name(target.name.clone());
-            let test_path = build::build_impl(
-                &target_args,
-                &test_config,
-                &metadata,
-                &root_dir,
-                &out_dir,
-                false,
-            )
+    let mut test_targets = Vec::new();
+    for target in test_target_iter {
+        println!("BUILD: {}", target.name);
+
+        let mut target_args = test_args.clone();
+        target_args.set_bin_name(target.name.clone());
+        let executables = build::build_impl(&builder, &mut target_args, true)
             .expect(&format!("Failed to build test: {}", target.name));
-            println!("");
+        let test_bin_path = executables
+            .first()
+            .ok_or("no test executable built")?
+            .to_owned();
+        if executables.len() > 1 {
+            Err("more than one test executables built")?;
+        }
 
-            (target, test_path)
-        })
-        .collect::<Vec<(&cargo_metadata::Target, PathBuf)>>();
+        test_targets.push((target, test_bin_path));
+    }
 
     let tests = test_targets
         .par_iter()
@@ -72,25 +57,25 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
             command.stderr(process::Stdio::null());
             let mut child = command
                 .spawn()
-                .with_context(|e| format_err!("Failed to launch QEMU: {:?}\n{}", command, e))?;
-            let timeout = Duration::from_secs(60);
+                .map_err(|e| format!("Failed to launch QEMU: {:?}\n{}", command, e))?;
+            let timeout = Duration::from_secs(config.test_timeout.into());
             match child
                 .wait_timeout(timeout)
-                .with_context(|e| format!("Failed to wait with timeout: {}", e))?
+                .map_err(|e| format!("Failed to wait with timeout: {}", e))?
             {
                 None => {
                     child
                         .kill()
-                        .with_context(|e| format!("Failed to kill QEMU: {}", e))?;
+                        .map_err(|e| format!("Failed to kill QEMU: {}", e))?;
                     child
                         .wait()
-                        .with_context(|e| format!("Failed to wait for QEMU process: {}", e))?;
+                        .map_err(|e| format!("Failed to wait for QEMU process: {}", e))?;
                     test_result = TestResult::TimedOut;
                     writeln!(io::stderr(), "Timed Out")?;
                 }
                 Some(exit_status) => {
-                    let output = fs::read_to_string(&output_file).with_context(|e| {
-                        format_err!("Failed to read test output file {}: {}", output_file, e)
+                    let output = fs::read_to_string(&output_file).map_err(|e| {
+                        format!("Failed to read test output file {}: {}", output_file, e)
                     })?;
                     test_result = handle_exit_status(exit_status, &output, &target.name)?;
                 }
@@ -98,7 +83,7 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
 
             Ok((target.name.clone(), test_result))
         })
-        .collect::<Result<Vec<(String, TestResult)>, Error>>()?;
+        .collect::<Result<Vec<(String, TestResult)>, ErrorMessage>>()?;
 
     println!("");
     if tests.iter().all(|t| t.1 == TestResult::Ok) {
@@ -109,7 +94,7 @@ pub(crate) fn test(args: Args) -> Result<(), Error> {
         for test in tests.iter().filter(|t| t.1 != TestResult::Ok) {
             writeln!(io::stderr(), "    {}: {:?}", test.0, test.1)?;
         }
-        process::exit(1);
+        Err("Some tests failed".into())
     }
 }
 
@@ -117,7 +102,7 @@ fn handle_exit_status(
     exit_status: process::ExitStatus,
     output: &str,
     target_name: &str,
-) -> Result<TestResult, Error> {
+) -> Result<TestResult, ErrorMessage> {
     match exit_status.code() {
         None => {
             writeln!(io::stderr(), "FAIL: No Exit Code.")?;

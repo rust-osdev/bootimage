@@ -1,0 +1,9 @@
+[package]
+name = "default-target-cargo"
+version = "0.1.0"
+authors = ["Philipp Oppermann <dev@phil-opp.com>"]
+edition = "2018"
+
+[dependencies]
+bootloader = "0.5.0"
+x86_64 = "0.5.3"
