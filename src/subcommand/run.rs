@@ -5,7 +5,7 @@ pub(crate) fn run(mut args: Args) -> Result<i32, ErrorMessage> {
     use crate::subcommand::build;
 
     let builder = Builder::new(args.manifest_path().clone())?;
-    let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
+    let config = config::read_config(builder.kernel_manifest_path())?;
     args.apply_default_target(&config, builder.kernel_root());
 
     let quiet = args.quiet;

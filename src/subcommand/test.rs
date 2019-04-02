@@ -5,7 +5,7 @@ use wait_timeout::ChildExt;
 
 pub(crate) fn test(mut args: Args) -> Result<(), ErrorMessage> {
     let builder = Builder::new(args.manifest_path().clone())?;
-    let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
+    let config = config::read_config(builder.kernel_manifest_path())?;
     args.apply_default_target(&config, builder.kernel_root());
 
     let test_args = args.clone();
