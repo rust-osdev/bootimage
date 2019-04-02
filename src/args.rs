@@ -249,13 +249,18 @@ where
     A: Iterator<Item = String>,
 {
     let mut arg_iter = args.into_iter().fuse();
-    let test_path = PathBuf::from(
+    let test_path_arg = PathBuf::from(
         arg_iter
             .next()
             .ok_or("excepted path to test source file as first argument")?,
-    )
-    .canonicalize()
-    .map_err(|err| format!("Failed to canonicalize test path: {}", err))?;
+    );
+    let test_path = test_path_arg.canonicalize().map_err(|err| {
+        format!(
+            "Failed to canonicalize test path `{}`: {}",
+            test_path_arg.display(),
+            err
+        )
+    })?;
     let mut run_command = None;
     let mut target = None;
 
