@@ -4,7 +4,7 @@ fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("generated_tests.rs");
     let mut tests = File::create(&dest_path).unwrap();
-    for entry in Path::new("tests/integration_tests").read_dir().expect("failed to read tests/integration tests") {
+    for entry in Path::new("tests").join("integration_tests").read_dir().expect("failed to read tests/integration tests") {
         let entry = entry.expect("failed to read dir entry");
         assert!(entry.file_type().unwrap().is_file());
         let test_path = entry.path();
