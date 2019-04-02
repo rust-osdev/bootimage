@@ -2,7 +2,7 @@
 #![cfg_attr(not(test), no_main)] // disable all Rust-level entry points
 #![cfg_attr(test, allow(unused_imports))]
 
-use testing::{exit_qemu, ExitCode};
+use tester::{exit_qemu, ExitCode};
 use core::panic::PanicInfo;
 
 /// This function is the entry point, since the linker looks for a function

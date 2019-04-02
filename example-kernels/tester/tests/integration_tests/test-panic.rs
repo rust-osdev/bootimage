@@ -2,7 +2,7 @@
 #![cfg_attr(not(test), no_main)]
 #![cfg_attr(test, allow(unused_imports))]
 
-use testing::{exit_qemu, ExitCode};
+use tester::{exit_qemu, ExitCode};
 use core::panic::PanicInfo;
 
 #[cfg(not(test))]
