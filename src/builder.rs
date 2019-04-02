@@ -329,17 +329,17 @@ impl fmt::Display for BuildKernelError {
                 writeln!(f, "Could not find kernel package in cargo metadata, required for retrieving kernel crate name")
             }
             BuildKernelError::Io {message, error} => {
-                writeln!(f, "I/O error: {}: {}", message, error)
+                writeln!(f, "I/O error: {}:\n{}", message, error)
             }
             BuildKernelError::XbuildNotFound => {
                 writeln!(f, "Failed to run `cargo xbuild`. Perhaps it is not installed?\n\
                     Run `cargo install cargo-xbuild` to install it.")
             }
             BuildKernelError::XbuildFailed{stderr} => {
-                writeln!(f, "Kernel build failed: {}", String::from_utf8_lossy(stderr))
+                writeln!(f, "Kernel build failed:\n{}", String::from_utf8_lossy(stderr))
             }
             BuildKernelError::CargoConfigInvalid{path,error} => {
-                writeln!(f, "Failed to read cargo config at {}: {}", path.display(), error)
+                writeln!(f, "Failed to read cargo config at {}:\n{}", path.display(), error)
             },
         }
     }
