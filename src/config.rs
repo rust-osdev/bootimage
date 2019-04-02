@@ -8,6 +8,7 @@ pub struct Config {
     pub run_command: Vec<String>,
     pub run_args: Option<Vec<String>>,
     pub test_timeout: u32,
+    non_exhaustive: (),
 }
 
 pub(crate) fn read_config(manifest_path: &Path) -> Result<Config, ErrorMessage> {
@@ -102,6 +103,7 @@ impl Into<Config> for ConfigBuilder {
             ]),
             run_args: self.run_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
+            non_exhaustive: (),
         }
     }
 }
