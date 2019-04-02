@@ -1,6 +1,6 @@
 use crate::{args::Args, builder::Builder, config, subcommand::build, ErrorString};
 use rayon::prelude::*;
-use std::{fs, io, io::Write, path::PathBuf, process, time::Duration};
+use std::{fs, io, io::Write, process, time::Duration};
 use wait_timeout::ChildExt;
 
 pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {
@@ -13,21 +13,29 @@ pub(crate) fn test(mut args: Args) -> Result<(), ErrorString> {
     let kernel_package = builder
         .kernel_package()
         .map_err(|key| format!("Kernel package not found it cargo metadata (`{}`)", key))?;
-    let test_targets = kernel_package
+    let test_target_iter = kernel_package
         .targets
         .iter()
-        .filter(|t| t.kind == ["bin"] && t.name.starts_with("test-"))
-        .map(|target| {
-            println!("BUILD: {}", target.name);
+        .filter(|t| t.kind == ["bin"] && t.name.starts_with("test-"));
 
-            let mut target_args = test_args.clone();
-            target_args.set_bin_name(target.name.clone());
-            let test_bin_path = build::build_impl(&builder, &mut target_args, true)
-                .expect(&format!("Failed to build test: {}", target.name));
+    let mut test_targets = Vec::new();
+    for target in test_target_iter {
+        println!("BUILD: {}", target.name);
 
-            (target, test_bin_path)
-        })
-        .collect::<Vec<(&cargo_metadata::Target, PathBuf)>>();
+        let mut target_args = test_args.clone();
+        target_args.set_bin_name(target.name.clone());
+        let executables = build::build_impl(&builder, &mut target_args, true)
+            .expect(&format!("Failed to build test: {}", target.name));
+        let test_bin_path = executables
+            .first()
+            .ok_or("no test executable built")?
+            .to_owned();
+        if executables.len() > 1 {
+            Err("more than one test executables built")?;
+        }
+
+        test_targets.push((target, test_bin_path));
+    }
 
     let tests = test_targets
         .par_iter()

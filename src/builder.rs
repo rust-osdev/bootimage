@@ -1,5 +1,5 @@
 use std::{
-    fmt, io,
+    fmt, fs, io,
     path::{Path, PathBuf},
     process::{self, Command},
 };
@@ -45,13 +45,17 @@ impl Builder {
         ))
     }
 
-    pub fn build_kernel(&self, args: &[String], quiet: bool) -> Result<(), BuildKernelError> {
+    pub fn build_kernel(
+        &self,
+        args: &[String],
+        quiet: bool,
+    ) -> Result<Vec<PathBuf>, BuildKernelError> {
         if !quiet {
             println!("Building kernel");
         }
 
         let cargo = std::env::var("CARGO").unwrap_or("cargo".to_owned());
-        let mut cmd = process::Command::new(cargo);
+        let mut cmd = process::Command::new(&cargo);
         cmd.arg("xbuild");
         cmd.args(args);
         if !quiet {
@@ -61,7 +65,7 @@ impl Builder {
         let output = cmd.output().map_err(|err| BuildKernelError::Io {
             message: "failed to execute kernel build",
             error: err,
-        })?;;
+        })?;
         if !output.status.success() {
             let mut help_command = process::Command::new("cargo");
             help_command.arg("xbuild").arg("--help");
@@ -77,7 +81,29 @@ impl Builder {
             });
         }
 
-        Ok(())
+        // Retrieve binary paths
+        let mut cmd = process::Command::new(cargo);
+        cmd.arg("xbuild");
+        cmd.args(args);
+        cmd.arg("--message-format").arg("json");
+        let output = cmd.output().map_err(|err| BuildKernelError::Io {
+            message: "failed to execute kernel build with json output",
+            error: err,
+        })?;
+        if !output.status.success() {
+            return Err(BuildKernelError::XbuildFailed {
+                stderr: output.stderr,
+            });
+        }
+        let mut executables = Vec::new();
+        for line in String::from_utf8(output.stdout).unwrap().lines() {
+            let mut artifact = json::parse(line).unwrap();
+            if let Some(executable) = artifact["executable"].take_string() {
+                executables.push(PathBuf::from(executable));
+            }
+        }
+
+        Ok(executables)
     }
 
     pub fn create_bootimage(
@@ -115,6 +141,31 @@ impl Builder {
                 "bootloader manifest has no target directory".into(),
             ),
         )?;
+        let bootloader_target = {
+            let cargo_config_content = match fs::read_to_string(
+                bootloader_root.join(".cargo").join("config"),
+            ) {
+                Err(ref err) if err.kind() == io::ErrorKind::NotFound => {
+                    return Err(CreateBootimageError::BootloaderInvalid("No `.cargo/config` file found in bootloader crate\n\n\
+                    (If you're using the official bootloader crate, you need at least version 0.5.0.)".into()));
+                }
+                Err(err) => {
+                    return Err(CreateBootimageError::Io {
+                        message: "Failed to read `cargo/config` file of bootloader crate",
+                        error: err,
+                    });
+                }
+                Ok(content) => content,
+            };
+            let cargo_config: toml::Value = cargo_config_content.parse().map_err(|err| {
+                CreateBootimageError::BootloaderInvalid(format!(
+                    "The `.cargo/config` file of the bootloader crate is not valid TOML: {}",
+                    err
+                ))
+            })?;
+            let target = cargo_config.get("build").and_then(|v| v.get("target")).and_then(|v| v.as_str()).ok_or(CreateBootimageError::BootloaderInvalid("The `.cargo/config` file of the bootloader crate contains no build.target key or it is not valid".into()))?;
+            bootloader_root.join(target)
+        };
         let bootloader_features =
             {
                 let resolve = metadata.resolve.as_ref().ok_or(
@@ -131,12 +182,6 @@ impl Builder {
                 })?;
                 bootloader_resolve.features.clone()
             };
-        let bootloader_target_triple =
-            crate::cargo_config::default_target_triple(&bootloader_root, false)
-                .map_err(CreateBootimageError::BootloaderInvalid)?
-                .ok_or(CreateBootimageError::BootloaderInvalid(format!(
-                    "bootloader must have a default target"
-                )))?;
 
         // build bootloader
         if !quiet {
@@ -144,17 +189,23 @@ impl Builder {
         }
 
         let cargo = std::env::var("CARGO").unwrap_or("cargo".to_owned());
-        let mut cmd = process::Command::new(cargo);
-        cmd.arg("xbuild");
-        cmd.arg("--manifest-path");
-        cmd.arg(&bootloader_pkg.manifest_path);
-        cmd.arg("--target-dir").arg(&target_dir);
-        cmd.arg("--features")
-            .arg(bootloader_features.as_slice().join(" "));
-        cmd.arg("--release");
-        cmd.current_dir(bootloader_root);
-        cmd.env("KERNEL", kernel_bin_path);
-        cmd.env_remove("RUSTFLAGS");
+        let build_command = || {
+            let mut cmd = process::Command::new(&cargo);
+            cmd.arg("xbuild");
+            cmd.arg("--manifest-path");
+            cmd.arg(&bootloader_pkg.manifest_path);
+            cmd.arg("--target-dir").arg(&target_dir);
+            cmd.arg("--features")
+                .arg(bootloader_features.as_slice().join(" "));
+            cmd.arg("--target").arg(&bootloader_target);
+            cmd.arg("--release");
+            cmd.env("KERNEL", kernel_bin_path);
+            cmd.env_remove("RUSTFLAGS");
+            cmd.env("SYSROOT_DIR", target_dir.join("sysroot")); // for cargo-xbuild
+            cmd
+        };
+
+        let mut cmd = build_command();
         if !quiet {
             cmd.stdout(process::Stdio::inherit());
             cmd.stderr(process::Stdio::inherit());
@@ -169,10 +220,35 @@ impl Builder {
             });
         }
 
-        let bootloader_elf_path = target_dir
-            .join(&bootloader_target_triple)
-            .join("release")
-            .join(&bootloader_name);
+        // Retrieve binary path
+        let mut cmd = build_command();
+        cmd.arg("--message-format").arg("json");
+        let output = cmd.output().map_err(|err| CreateBootimageError::Io {
+            message: "failed to execute bootloader build command with json output",
+            error: err,
+        })?;
+        if !output.status.success() {
+            return Err(CreateBootimageError::BootloaderBuildFailed {
+                stderr: output.stderr,
+            });
+        }
+        let mut bootloader_elf_path = None;
+        for line in String::from_utf8(output.stdout).unwrap().lines() {
+            let mut artifact = json::parse(line).unwrap();
+            if let Some(executable) = artifact["executable"].take_string() {
+                if bootloader_elf_path
+                    .replace(PathBuf::from(executable))
+                    .is_some()
+                {
+                    return Err(CreateBootimageError::BootloaderInvalid(
+                        "bootloader has multiple executables".into(),
+                    ));
+                }
+            }
+        }
+        let bootloader_elf_path = bootloader_elf_path.ok_or(
+            CreateBootimageError::BootloaderInvalid("bootloader has no executable".into()),
+        )?;
 
         let llvm_tools = llvm_tools::LlvmTools::new()?;
         let objcopy = llvm_tools

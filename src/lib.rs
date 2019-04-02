@@ -3,7 +3,6 @@ use std::fmt;
 
 pub mod args;
 pub mod builder;
-pub mod cargo_config;
 pub mod config;
 pub mod help;
 

@@ -1,8 +1,7 @@
-use crate::{cargo_config, args::TesterArgs, builder::Builder, config, ErrorString};
+use crate::{args::TesterArgs, builder::Builder, config, ErrorString};
 use std::{
     fs,
-    io::{self, Write},
-    path::Path,
+    path::{Path, PathBuf},
     process,
     process::Command,
     time::Duration,
@@ -69,11 +68,10 @@ pub(crate) fn tester(args: TesterArgs) -> Result<(), ErrorString> {
         table.insert("dependencies".to_owned(), toml::Value::Table(dependencies));
         toml::Value::Table(table)
     };
-    let kernel_target_dir = Path::new("target")
-        .canonicalize()
-        .expect("failed to canonicalize target dir"); // TODO
 
-    let out_dir = kernel_target_dir.join("bootimage").join("integration-tests").join(&test_name);
+    let kernel_target_dir = &builder.kernel_metadata().target_directory;
+    let integration_test_dir = kernel_target_dir.join("bootimage").join("tester");
+    let out_dir = integration_test_dir.join(&test_name);
     fs::create_dir_all(&out_dir).expect("failed to create out dir");
 
     let manifest_path = out_dir.join("Cargo.toml");
@@ -99,43 +97,57 @@ path = "{test_path}"
     fs::write(&manifest_path, manifest_content)?;
 
     let cargo = std::env::var("CARGO").unwrap_or("cargo".to_owned());
-    let mut cmd = Command::new(cargo);
-    cmd.arg("xbuild");
-    cmd.arg("--manifest-path").arg(&manifest_path);
-    cmd.arg("--target-dir").arg(&kernel_target_dir);
-    cmd.env("SYSROOT_DIR", &kernel_target_dir.join("sysroot")); // for cargo-xbuild
-    if let Some(target) = args.target.as_ref().or(config.default_target.as_ref()) {
-        cmd.arg("--target").arg(target);
-    }
-    let output = cmd.output().expect("failed to run cargo xbuild");
+    let build_command = || {
+        let mut cmd = Command::new(&cargo);
+        cmd.arg("xbuild");
+        cmd.arg("--manifest-path").arg(&manifest_path);
+        cmd.arg("--target-dir")
+            .arg(&integration_test_dir.join("target"));
+        cmd.env("SYSROOT_DIR", &integration_test_dir.join("sysroot")); // for cargo-xbuild
+
+        if let Some(target) = args.target.as_ref().or(config.default_target.as_ref()) {
+            cmd.arg("--target").arg(target);
+        }
+        cmd
+    };
+
+    let mut cmd = build_command();
+    let output = cmd
+        .output()
+        .map_err(|err| format!("failed to run cargo xbuild: {}", err))?;
     if !output.status.success() {
-        io::stderr()
-            .write_all(&output.stderr)
-            .expect("failed to write to stderr");
-        process::exit(1);
+        Err(format!(
+            "Test build failed:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        ))?;
     }
 
-    let kernel_target_triple = {
-        match args.target.or(config.default_target) {
-            None => cargo_config::default_target_triple(kernel_root_path, true)?,
-            Some(ref target) if target.ends_with(".json") => {
-                Some(Path::new(target).file_stem().expect("kernel target json has no valid file stem").to_str().expect("invalid unicode").to_owned())
+    let mut cmd_json = build_command();
+    cmd_json.arg("--message-format").arg("json");
+    let output = cmd_json.output().map_err(|err| {
+        format!(
+            "failed to execute bootloader build command with json output: {}",
+            err
+        )
+    })?;
+    if !output.status.success() {
+        Err(format!(
+            "Test build (with json output) failed:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        ))?;
+    }
+    let mut test_executable = None;
+    for line in String::from_utf8(output.stdout).unwrap().lines() {
+        let mut artifact = json::parse(line).unwrap();
+        if let Some(executable) = artifact["executable"].take_string() {
+            if test_executable.replace(PathBuf::from(executable)).is_some() {
+                Err("integration test has multiple executables")?;
             }
-            Some(triple) => Some(triple),
         }
-    };
+    }
 
-    let executable = {
-        let mut path = kernel_target_dir.clone();
-        if let Some(triple) = kernel_target_triple {
-            path.push(triple);
-        }
-        path.push("debug");
-        path.push(&test_name);
-        path
-    };
+    let executable = test_executable.ok_or("no test executable")?;
     let bootimage_bin_path = out_dir.join(format!("bootimage-{}.bin", test_name));
-
     builder.create_bootimage(&executable, &bootimage_bin_path, true)?;
 
     let run_cmd = args.run_command.clone().unwrap_or(

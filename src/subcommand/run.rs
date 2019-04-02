@@ -8,7 +8,11 @@ pub(crate) fn run(mut args: Args) -> Result<(), ErrorString> {
     let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
     args.apply_default_target(&config, builder.kernel_root());
 
-    let bootimage_path = build::build_impl(&builder, &mut args, false)?;
+    let bootimages = build::build_impl(&builder, &mut args, false)?;
+    let bootimage_path = bootimages.first().ok_or("no bootimages created")?;
+    if bootimages.len() > 1 {
+        Err("more than one bootimage created")?;
+    }
 
     let command = &config.run_command[0];
     let mut command = process::Command::new(command);
