@@ -7,3 +7,6 @@ edition = "2018"
 [dependencies]
 bootloader = "0.5.0"
 x86_64 = "0.5.3"
+
+[package.metadata.bootimage]
+run-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-display", "none"]

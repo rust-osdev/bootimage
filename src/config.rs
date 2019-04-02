@@ -7,6 +7,7 @@ pub struct Config {
     pub manifest_path: PathBuf,
     pub default_target: Option<String>,
     pub run_command: Vec<String>,
+    pub run_args: Option<Vec<String>>,
     pub test_timeout: u32,
 }
 
@@ -70,6 +71,16 @@ pub(crate) fn read_config_inner(manifest_path: PathBuf) -> Result<Config, ErrorS
                 }
                 config.run_command = Some(command);
             }
+            ("run-args", Value::Array(array)) => {
+                let mut args = Vec::new();
+                for value in array {
+                    match value {
+                        Value::String(s) => args.push(s),
+                        _ => Err(format!("run-args must be a list of strings"))?,
+                    }
+                }
+                config.run_args = Some(args);
+            }
             (key, value) => Err(format!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
@@ -85,6 +96,7 @@ struct ConfigBuilder {
     manifest_path: Option<PathBuf>,
     default_target: Option<String>,
     run_command: Option<Vec<String>>,
+    run_args: Option<Vec<String>>,
     test_timeout: Option<u32>,
 }
 
@@ -98,6 +110,7 @@ impl Into<Config> for ConfigBuilder {
                 "-drive".into(),
                 "format=raw,file={}".into(),
             ]),
+            run_args: self.run_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
         }
     }

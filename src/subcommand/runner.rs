@@ -1,8 +1,9 @@
-use crate::{args::RunnerArgs, builder::Builder, ErrorString};
+use crate::{args::RunnerArgs, builder::Builder, config, ErrorString};
 use std::{fs, process};
 
 pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorString> {
     let builder = Builder::new(None)?;
+    let config = config::read_config(builder.kernel_manifest_path().to_owned())?;
 
     let bootimage_bin = {
         let kernel_target_dir = &builder.kernel_metadata().target_directory;
@@ -38,17 +39,11 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorString> {
 
     builder.create_bootimage(&args.executable, &bootimage_bin, false)?;
 
-    let run_cmd = args.run_command.unwrap_or(vec![
-        "qemu-system-x86_64".into(),
-        "-drive".into(),
-        "format=raw,file={bootimage}".into(),
-    ]);
-
-    let mut command = process::Command::new(&run_cmd[0]);
-    for arg in &run_cmd[1..] {
-        command.arg(arg.replace("{bootimage}", &format!("{}", bootimage_bin.display())));
+    let mut command = process::Command::new(&config.run_command[0]);
+    for arg in &config.run_command[1..] {
+        command.arg(arg.replace("{}", &format!("{}", bootimage_bin.display())));
     }
-    if let Some(run_args) = args.run_args {
+    if let Some(run_args) = config.run_args {
         command.args(run_args);
     }
 

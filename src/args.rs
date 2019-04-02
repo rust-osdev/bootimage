@@ -207,56 +207,41 @@ fn parse_runner_args<A>(args: A) -> Result<Command, ErrorString>
 where
     A: Iterator<Item = String>,
 {
+    let mut executable = None;
     let mut arg_iter = args.into_iter().fuse();
-    let executable = PathBuf::from(
-        arg_iter
-            .next()
-            .ok_or("excepted path to kernel executable as first argument")?,
-    )
-    .canonicalize()
-    .map_err(|err| format!("Failed to canonicalize executable path: {}", err))?;
-    let mut run_command = None;
-    let mut run_args = None;
 
     loop {
         match arg_iter.next().as_ref().map(|s| s.as_str()) {
-            Some("--command") => {
-                let old = mem::replace(&mut run_command, Some(arg_iter.collect()));
-                if !old.is_none() {
-                    Err("multiple `--command` arguments")?;
-                }
-                break;
-            }
-            Some("--args") => {
-                let old = mem::replace(&mut run_args, Some(arg_iter.collect()));
-                if !old.is_none() {
-                    Err("multiple `--args` arguments")?;
-                }
-                break;
-            }
             Some("--help") | Some("-h") => {
                 return Ok(Command::RunnerHelp);
             }
             Some("--version") => {
                 return Ok(Command::Version);
             }
-            None => break,
+            Some(exe) if executable.is_none() => {
+                let path = Path::new(exe);
+                let path_canonicalized = path.canonicalize().map_err(|err| {
+                    format!(
+                        "Failed to canonicalize executable path `{}`: {}",
+                        path.display(),
+                        err
+                    )
+                })?;
+                executable = Some(path_canonicalized);
+            }
             Some(arg) => Err(format!("unexpected argument `{}`", arg))?,
+            None => break,
         }
     }
 
     Ok(Command::Runner(RunnerArgs {
-        executable,
-        run_command,
-        run_args,
+        executable: executable.ok_or("excepted path to kernel executable as first argument")?,
     }))
 }
 
 #[derive(Debug, Clone)]
 pub struct RunnerArgs {
     pub executable: PathBuf,
-    pub run_command: Option<Vec<String>>,
-    pub run_args: Option<Vec<String>>,
 }
 
 fn parse_tester_args<A>(args: A) -> Result<Command, ErrorString>
