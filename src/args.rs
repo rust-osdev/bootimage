@@ -173,16 +173,8 @@ impl Args {
         &self.manifest_path
     }
 
-    pub fn bin_name(&self) -> &Option<String> {
-        &self.bin_name
-    }
-
     pub fn target(&self) -> &Option<String> {
         &self.target
-    }
-
-    pub fn release(&self) -> bool {
-        self.release
     }
 
     pub fn set_target(&mut self, target: String) {

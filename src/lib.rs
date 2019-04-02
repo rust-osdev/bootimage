@@ -1,8 +1,8 @@
 use args::{Args, RunnerArgs};
 use std::{fmt, process};
 
-pub mod args;
 pub mod builder;
+mod args;
 pub mod config;
 pub mod help;
 
