@@ -83,6 +83,8 @@ name = "{test_name}"
 version = "0.0.0"
 edition = "2018"
 
+[workspace] # exclude this crate from parent workspaces
+
 [[bin]]
 name = "{test_name}"
 path = "{test_path}"
