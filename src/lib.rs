@@ -67,10 +67,11 @@ pub fn run() -> Result<Option<i32>, ErrorMessage> {
         Command::NoSubcommand => help::no_subcommand(),
         Command::Help => Ok(help::help()).map(none),
         Command::BuildHelp => Ok(help::build_help()).map(none),
+        Command::CargoBootimageHelp => Ok(help::cargo_bootimage_help()).map(none),
         Command::RunHelp => Ok(help::run_help()).map(none),
+        Command::RunnerHelp => Ok(help::runner_help()).map(none),
         Command::TestHelp => Ok(help::test_help()).map(none),
         Command::Version => Ok(println!("bootimage {}", env!("CARGO_PKG_VERSION"))).map(none),
-        Command::RunnerHelp | Command::CargoBootimageHelp => unimplemented!(),
     }
 }
 
