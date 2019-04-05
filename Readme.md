@@ -16,10 +16,10 @@ First you need to add a dependency on the [`bootloader`](https://github.com/rust
 # in your Cargo.toml
 
 [dependencies]
-bootloader = "0.5.0"
+bootloader = "0.5.1"
 ```
 
-**Note**: At least bootloader version `0.5.0` is required since `bootimage 0.7.0`. For earlier bootloader versions, use `bootimage 0.6.6`.
+**Note**: At least bootloader version `0.5.1` is required since `bootimage 0.7.0`. For earlier bootloader versions, use `bootimage 0.6.6`.
 
 If you want to use a custom bootloader with a different name, you can use Cargo's [rename functionality](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml).
 

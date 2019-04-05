@@ -2,7 +2,7 @@
 ## Breaking
 
 - Rewrite for new bootloader build system
-  - Compatible with bootloader 0.5.0+
+  - Compatible with bootloader 0.5.1+
 - Remove the following config options: `output`, `bootloader.*`, `minimum_image_size`, and `package_filepath`
   - The bootloader is now fully controlled through cargo dependencies.
   - For using a bootloader crate with name different than `bootloader` use [cargo's rename feature](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml).

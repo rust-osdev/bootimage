@@ -12,7 +12,7 @@ dependencies = [
 name = "basic"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -28,7 +28,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "bootloader"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "fixedvec 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -48,7 +48,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "default-target-bootimage"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -56,7 +56,7 @@ dependencies = [
 name = "default-target-cargo"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -177,7 +177,7 @@ dependencies = [
 name = "runner"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -234,7 +234,7 @@ dependencies = [
 name = "testing-qemu-exit-code"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -242,7 +242,7 @@ dependencies = [
 name = "testing-serial-result"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "spin 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "uart_16550 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -347,7 +347,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum array-init 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "23589ecb866b460d3a0f1278834750268c607e8e28a1b982c907219f3178cd72"
 "checksum bit_field 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ed8765909f9009617974ab6b7d332625b320b33c326b1e9321382ef1999b5d56"
 "checksum bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "228047a76f468627ca71776ecdebd732a3423081fcf5125585bcd7c49886ce12"
-"checksum bootloader 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8668a7d724534aba1c3f2509eea122fcf611c31101662ecb947d502cc3cb96ae"
+"checksum bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a70143804c70c39473b3d7e99b870fb4f7f319f3100386f5dedf06e11e1799f0"
 "checksum cc 1.0.32 (registry+https://github.com/rust-lang/crates.io-index)" = "ad0daef304fa0b4238f5f7ed7178774b43b06f6a9b6509f6642bef4ff1f7b9b2"
 "checksum fixedvec 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "7c6c16d316ccdac21a4dd648e314e76facbbaf316e83ca137d0857a9c07419d0"
 "checksum font8x8 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b81d84c3c978af7d05d31a2198af4b9ba956d819d15d8f6d58fc150e33f8dc1f"
