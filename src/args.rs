@@ -186,6 +186,10 @@ impl Args {
         self.cargo_args.push(target);
     }
 
+    pub fn bin_name(&self) -> Option<&str> {
+        self.bin_name.as_ref().map(String::as_str)
+    }
+
     pub fn set_bin_name(&mut self, bin_name: String) {
         assert!(self.bin_name.is_none());
         self.bin_name = Some(bin_name.clone());

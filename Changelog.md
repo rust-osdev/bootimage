@@ -1,3 +1,7 @@
+- Fix for backwards compatibility: Ignore `test-` executables for `bootimage run`.
+    - This ensures that `bootimage run` still works without the need for a `--bin` argument if all other executables are integration tests.
+    - This only changes the default, you can still run test executables by passing `--bin test-.`
+
 # 0.7.0
 
 ## Breaking
