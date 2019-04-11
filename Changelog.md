@@ -1,5 +1,7 @@
 
 - Make `bootimage runner` pass additional arguments to the run command (e.g. QEMU).
+- Apply `test-timeout` config key when running tests in `bootimage runner`
+    - All binaries in the `target/deps` folder are considered tests for this feature
 
 # 0.7.1
 

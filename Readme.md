@@ -75,7 +75,7 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     # (this is useful when you want to add some arguments to the default QEMU command)
     run-args = []
 
-    # The timeout for running an integration test through `bootimage test` in seconds
+    # The timeout for running a test through `bootimage test` or `bootimage runner` (in seconds)
     test-timeout = 300
 ```
 

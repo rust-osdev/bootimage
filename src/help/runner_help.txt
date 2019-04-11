@@ -24,4 +24,5 @@ CONFIGURATION:
     run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
     # Additional arguments passed to the runner on `bootimage run` or `bootimage runner`
     # (this is useful when you want to add some arguments to the default QEMU command)
-    run-args = []
+    run-args = []    # The timeout for running a test (in seconds)
+    test-timeout = 300

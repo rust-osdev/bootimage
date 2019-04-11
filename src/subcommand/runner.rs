@@ -36,9 +36,35 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
 
     println!("Running: {:?}", command);
 
-    let output = command
-        .output()
-        .map_err(|e| format!("Failed to execute `{:?}`: {}", command, e))?;
+    let exit_code = if is_test {
+        let mut child = command
+            .spawn()
+            .map_err(|e| format!("Failed to launch QEMU: {:?}\n{}", command, e))?;
+        let timeout = Duration::from_secs(config.test_timeout.into());
+        match child
+            .wait_timeout(timeout)
+            .map_err(|e| format!("Failed to wait with timeout: {}", e))?
+        {
+            None => {
+                child
+                    .kill()
+                    .map_err(|e| format!("Failed to kill QEMU: {}", e))?;
+                child
+                    .wait()
+                    .map_err(|e| format!("Failed to wait for QEMU process: {}", e))?;
+                return Err(ErrorMessage::from("Timed Out"));
+            }
+            Some(exit_status) => match config.test_success_exit_code {
+                Some(code) if exit_status.code() == Some(code) => 0,
+                other => other.unwrap_or(1),
+            },
+        }
+    } else {
+        let status = command
+            .status()
+            .map_err(|e| format!("Failed to execute `{:?}`: {}", command, e))?;
+        status.code().unwrap_or(1)
+    };
 
-    Ok(output.status.code().unwrap_or(1))
+    Ok(exit_code)
 }

@@ -19,7 +19,7 @@ pub struct Config {
     pub run_command: Vec<String>,
     /// Additional arguments passed to the runner on `bootimage run` or `bootimage runner`
     pub run_args: Option<Vec<String>>,
-    /// The timeout for running an integration test through `bootimage test` in seconds
+    /// The timeout for running an test through `bootimage test` or `bootimage runner` in seconds
     pub test_timeout: u32,
     non_exhaustive: (),
 }
