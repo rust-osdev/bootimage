@@ -21,6 +21,10 @@ pub struct Config {
     ///
     /// Applies to `bootimage run` and `bootimage runner`.
     pub run_args: Option<Vec<String>>,
+    /// Additional arguments passed to the runner for test binaries
+    ///
+    /// Applies to `bootimage runner`.
+    pub test_args: Option<Vec<String>>,
     /// The timeout for running an test through `bootimage test` or `bootimage runner` in seconds
     pub test_timeout: u32,
     non_exhaustive: (),
@@ -89,6 +93,16 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 }
                 config.run_args = Some(args);
             }
+            ("test-args", Value::Array(array)) => {
+                let mut args = Vec::new();
+                for value in array {
+                    match value {
+                        Value::String(s) => args.push(s),
+                        _ => Err(format!("test-args must be a list of strings"))?,
+                    }
+                }
+                config.test_args = Some(args);
+            }
             (key, value) => Err(format!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
@@ -104,6 +118,7 @@ struct ConfigBuilder {
     default_target: Option<String>,
     run_command: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
+    test_args: Option<Vec<String>>,
     test_timeout: Option<u32>,
 }
 
@@ -117,6 +132,7 @@ impl Into<Config> for ConfigBuilder {
                 "format=raw,file={}".into(),
             ]),
             run_args: self.run_args,
+            test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
             non_exhaustive: (),
         }
