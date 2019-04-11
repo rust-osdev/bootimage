@@ -1,22 +1,24 @@
 use crate::{args::RunnerArgs, builder::Builder, config, ErrorMessage};
-use std::process;
+use std::{process, time::Duration};
+use wait_timeout::ChildExt;
 
 pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
     let builder = Builder::new(None)?;
     let config = config::read_config(builder.kernel_manifest_path())?;
+    let exe_parent = args
+        .executable
+        .parent()
+        .ok_or("kernel executable has no parent")?;
+    let is_test = exe_parent.ends_with("deps");
 
     let bootimage_bin = {
-        let parent = args
-            .executable
-            .parent()
-            .ok_or("kernel executable has no parent")?;
         let file_stem = args
             .executable
             .file_stem()
             .ok_or("kernel executable has no file stem")?
             .to_str()
             .ok_or("kernel executable file stem is not valid UTF-8")?;
-        parent.join(format!("bootimage-{}.bin", file_stem))
+        exe_parent.join(format!("bootimage-{}.bin", file_stem))
     };
 
     builder.create_bootimage(&args.executable, &bootimage_bin, args.quiet)?;
