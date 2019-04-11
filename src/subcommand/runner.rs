@@ -21,20 +21,30 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
         exe_parent.join(format!("bootimage-{}.bin", file_stem))
     };
 
-    builder.create_bootimage(&args.executable, &bootimage_bin, args.quiet)?;
+    let executable_canonicalized = args.executable.canonicalize().map_err(|err| {
+        format!(
+            "failed to canonicalize executable path `{}`: {}",
+            args.executable.display(),
+            err
+        )
+    })?;
+    builder.create_bootimage(&executable_canonicalized, &bootimage_bin, args.quiet)?;
 
-    let mut command = process::Command::new(&config.run_command[0]);
-    for arg in &config.run_command[1..] {
-        command.arg(arg.replace("{}", &format!("{}", bootimage_bin.display())));
-    }
-    if let Some(run_args) = config.run_args {
-        command.args(run_args);
+    let mut run_command: Vec<_> = config
+        .run_command
+        .iter()
+        .map(|arg| arg.replace("{}", &format!("{}", bootimage_bin.display())))
+        .collect();
+    if let Some(args) = config.run_args {
+        run_command.extend(args);
     }
     if let Some(args) = args.runner_args {
-        command.args(args);
+        run_command.extend(args);
     }
 
-    println!("Running: {:?}", command);
+    println!("Running: `{}`", run_command.join(" "));
+    let mut command = process::Command::new(&run_command[0]);
+    command.args(&run_command[1..]);
 
     let exit_code = if is_test {
         let mut child = command

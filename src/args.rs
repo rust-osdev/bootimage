@@ -240,15 +240,7 @@ where
                 quiet = true;
             }
             exe => {
-                let path = Path::new(exe);
-                let path_canonicalized = path.canonicalize().map_err(|err| {
-                    format!(
-                        "Failed to canonicalize executable path `{}`: {}",
-                        path.display(),
-                        err
-                    )
-                })?;
-                executable = Some(path_canonicalized);
+                executable = Some(PathBuf::from(exe));
             }
         }
     }
