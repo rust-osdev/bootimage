@@ -213,21 +213,33 @@ where
 {
     let mut executable = None;
     let mut quiet = false;
+    let mut runner_args = None;
 
     let mut arg_iter = args.into_iter().fuse();
 
     loop {
-        match arg_iter.next().as_ref().map(|s| s.as_str()) {
-            Some("--help") | Some("-h") => {
+        if executable.is_some() {
+            let args: Vec<_> = arg_iter.collect();
+            if args.len() > 0 {
+                runner_args = Some(args);
+            }
+            break;
+        }
+        let next = match arg_iter.next() {
+            Some(next) => next,
+            None => break,
+        };
+        match next.as_str() {
+            "--help" | "-h" => {
                 return Ok(Command::RunnerHelp);
             }
-            Some("--version") => {
+            "--version" => {
                 return Ok(Command::Version);
             }
-            Some("--quiet") => {
+            "--quiet" => {
                 quiet = true;
             }
-            Some(exe) if executable.is_none() => {
+            exe => {
                 let path = Path::new(exe);
                 let path_canonicalized = path.canonicalize().map_err(|err| {
                     format!(
@@ -238,14 +250,13 @@ where
                 })?;
                 executable = Some(path_canonicalized);
             }
-            Some(arg) => Err(format!("unexpected argument `{}`", arg))?,
-            None => break,
         }
     }
 
     Ok(Command::Runner(RunnerArgs {
         executable: executable.ok_or("excepted path to kernel executable as first argument")?,
         quiet,
+        runner_args,
     }))
 }
 
@@ -254,4 +265,5 @@ pub struct RunnerArgs {
     pub executable: PathBuf,
     /// Suppress any output to stdout.
     pub quiet: bool,
+    pub runner_args: Option<Vec<String>>,
 }

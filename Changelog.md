@@ -1,3 +1,6 @@
+
+- Make `bootimage runner` pass additional arguments to the run command (e.g. QEMU).
+
 # 0.7.1
 
 - Fix for backwards compatibility: Ignore `test-` executables for `bootimage run`.

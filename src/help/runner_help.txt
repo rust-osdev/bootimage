@@ -1,7 +1,7 @@
 Creates a bootable disk image from a Rust kernel and launches it in QEMU
 
 USAGE:
-    bootimage runner EXECUTABLE        Convert and run the given EXECUTABLE
+    bootimage runner EXECUTABLE [ARGS]    Convert and run the given EXECUTABLE
 
     (for other forms of usage see `bootimage --help`)
 
@@ -10,6 +10,8 @@ USAGE:
         [target.'cfg(target_os = "none")']
         runner = "bootimage runner"
     ```
+
+    All ARGS are passed to the run command.
 
 CONFIGURATION:
     The behavior of `bootimage runner` can be configured through a

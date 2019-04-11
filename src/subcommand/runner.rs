@@ -28,6 +28,9 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
     if let Some(run_args) = config.run_args {
         command.args(run_args);
     }
+    if let Some(args) = args.runner_args {
+        command.args(args);
+    }
 
     println!("Running: {:?}", command);
 
