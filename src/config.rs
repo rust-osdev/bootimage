@@ -27,6 +27,9 @@ pub struct Config {
     pub test_args: Option<Vec<String>>,
     /// The timeout for running an test through `bootimage test` or `bootimage runner` in seconds
     pub test_timeout: u32,
+    /// An exit code that should be considered as success for test executables (applies to
+    /// `bootimage runner`)
+    pub test_success_exit_code: Option<i32>,
     non_exhaustive: (),
 }
 
@@ -72,6 +75,9 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
             }
             ("test-timeout", Value::Integer(timeout)) => {
                 config.test_timeout = Some(timeout as u32);
+            }
+            ("test-success-exit-code", Value::Integer(exit_code)) => {
+                config.test_success_exit_code = Some(exit_code as i32);
             }
             ("run-command", Value::Array(array)) => {
                 let mut command = Vec::new();
@@ -120,6 +126,7 @@ struct ConfigBuilder {
     run_args: Option<Vec<String>>,
     test_args: Option<Vec<String>>,
     test_timeout: Option<u32>,
+    test_success_exit_code: Option<i32>,
 }
 
 impl Into<Config> for ConfigBuilder {
@@ -134,6 +141,7 @@ impl Into<Config> for ConfigBuilder {
             run_args: self.run_args,
             test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
+            test_success_exit_code: self.test_success_exit_code,
             non_exhaustive: (),
         }
     }

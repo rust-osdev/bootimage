@@ -26,5 +26,7 @@ CONFIGURATION:
     run-args = []
     # Additional arguments passed to the run command for test executables
     test-args = []
+    # An exit code that should be considered as success for test executables
+    test-success-exit-code = {integer}
     # The timeout for running a test (in seconds)
     test-timeout = 300
