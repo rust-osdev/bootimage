@@ -42,7 +42,9 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
         run_command.extend(args);
     }
 
-    println!("Running: `{}`", run_command.join(" "));
+    if !args.quiet {
+        println!("Running: `{}`", run_command.join(" "));
+    }
     let mut command = process::Command::new(&run_command[0]);
     command.args(&run_command[1..]);
 
