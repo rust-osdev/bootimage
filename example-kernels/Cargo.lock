@@ -182,6 +182,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "runner-test"
+version = "0.1.0"
+dependencies = [
+ "bootloader 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "x86_64 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "rustc_version"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

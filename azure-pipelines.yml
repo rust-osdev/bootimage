@@ -199,6 +199,10 @@ jobs:
     workingDirectory: example-kernels/runner
     displayName: 'Run `cargo xrun` for "runner" kernel'
 
+  - script: cargo xtest
+    workingDirectory: example-kernels/runner-test
+    displayName: 'Run `cargo xtest` for "runner-test" kernel'
+
 - job: formatting
   displayName: Check Formatting
 
