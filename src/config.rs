@@ -17,7 +17,9 @@ pub struct Config {
     ///
     /// The substring "{}" will be replaced with the path to the bootable disk image.
     pub run_command: Vec<String>,
-    /// Additional arguments passed to the runner on `bootimage run` or `bootimage runner`
+    /// Additional arguments passed to the runner for not-test binaries
+    ///
+    /// Applies to `bootimage run` and `bootimage runner`.
     pub run_args: Option<Vec<String>>,
     /// The timeout for running an test through `bootimage test` or `bootimage runner` in seconds
     pub test_timeout: u32,

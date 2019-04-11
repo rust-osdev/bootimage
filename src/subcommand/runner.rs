@@ -35,8 +35,10 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
         .iter()
         .map(|arg| arg.replace("{}", &format!("{}", bootimage_bin.display())))
         .collect();
-    if let Some(args) = config.run_args {
-        run_command.extend(args);
+    if !is_test {
+        if let Some(args) = config.run_args {
+            run_command.extend(args);
+        }
     }
     if let Some(args) = args.runner_args {
         run_command.extend(args);
