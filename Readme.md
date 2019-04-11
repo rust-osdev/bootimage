@@ -67,8 +67,9 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     # This target is used if no `--target` is passed
     default-target = ""
 
-    # The command invoked on `bootimage run` or `bootimage runner`
-    # (the "{}" will be replaced with the path to the bootable disk image)
+    # The command invoked with the created bootimage (the "{}" will be replaced
+    # with the path to the bootable disk image)
+    # Applies to `bootimage run` and `bootimage runner`
     run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
 
     # Additional arguments passed to the runner on `bootimage run` or `bootimage runner`
