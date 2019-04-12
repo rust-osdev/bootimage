@@ -1,0 +1,17 @@
+[package]
+name = "runner-test"
+version = "0.1.0"
+authors = ["Philipp Oppermann <dev@phil-opp.com>"]
+edition = "2018"
+
+[[test]]
+name = "no-harness"
+harness = false
+
+[dependencies]
+bootloader = "0.5.1"
+x86_64 = "0.5.3"
+
+[package.metadata.bootimage]
+test-success-exit-code = 33 # (0x10 << 1) | 1
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-display", "none"]

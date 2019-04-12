@@ -17,10 +17,19 @@ pub struct Config {
     ///
     /// The substring "{}" will be replaced with the path to the bootable disk image.
     pub run_command: Vec<String>,
-    /// Additional arguments passed to the runner on `bootimage run` or `bootimage runner`
+    /// Additional arguments passed to the runner for not-test binaries
+    ///
+    /// Applies to `bootimage run` and `bootimage runner`.
     pub run_args: Option<Vec<String>>,
-    /// The timeout for running an integration test through `bootimage test` in seconds
+    /// Additional arguments passed to the runner for test binaries
+    ///
+    /// Applies to `bootimage runner`.
+    pub test_args: Option<Vec<String>>,
+    /// The timeout for running an test through `bootimage test` or `bootimage runner` in seconds
     pub test_timeout: u32,
+    /// An exit code that should be considered as success for test executables (applies to
+    /// `bootimage runner`)
+    pub test_success_exit_code: Option<i32>,
     non_exhaustive: (),
 }
 
@@ -67,6 +76,9 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
             ("test-timeout", Value::Integer(timeout)) => {
                 config.test_timeout = Some(timeout as u32);
             }
+            ("test-success-exit-code", Value::Integer(exit_code)) => {
+                config.test_success_exit_code = Some(exit_code as i32);
+            }
             ("run-command", Value::Array(array)) => {
                 let mut command = Vec::new();
                 for value in array {
@@ -87,6 +99,16 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 }
                 config.run_args = Some(args);
             }
+            ("test-args", Value::Array(array)) => {
+                let mut args = Vec::new();
+                for value in array {
+                    match value {
+                        Value::String(s) => args.push(s),
+                        _ => Err(format!("test-args must be a list of strings"))?,
+                    }
+                }
+                config.test_args = Some(args);
+            }
             (key, value) => Err(format!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
@@ -102,7 +124,9 @@ struct ConfigBuilder {
     default_target: Option<String>,
     run_command: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
+    test_args: Option<Vec<String>>,
     test_timeout: Option<u32>,
+    test_success_exit_code: Option<i32>,
 }
 
 impl Into<Config> for ConfigBuilder {
@@ -115,7 +139,9 @@ impl Into<Config> for ConfigBuilder {
                 "format=raw,file={}".into(),
             ]),
             run_args: self.run_args,
+            test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
+            test_success_exit_code: self.test_success_exit_code,
             non_exhaustive: (),
         }
     }

@@ -67,15 +67,23 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     # This target is used if no `--target` is passed
     default-target = ""
 
-    # The command invoked on `bootimage run` or `bootimage runner`
-    # (the "{}" will be replaced with the path to the bootable disk image)
+    # The command invoked with the created bootimage (the "{}" will be replaced
+    # with the path to the bootable disk image)
+    # Applies to `bootimage run` and `bootimage runner`
     run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
 
-    # Additional arguments passed to the runner on `bootimage run` or `bootimage runner`
-    # (this is useful when you want to add some arguments to the default QEMU command)
+    # Additional arguments passed to the run command for non-test executables
+    # Applies to `bootimage run` and `bootimage runner`
     run-args = []
 
-    # The timeout for running an integration test through `bootimage test` in seconds
+    # Additional arguments passed to the run command for test executables
+    # Applies to `bootimage runner`
+    test-args = []
+
+    # An exit code that should be considered as success for test executables
+    test-success-exit-code = {integer}
+
+    # The timeout for running a test through `bootimage test` or `bootimage runner` (in seconds)
     test-timeout = 300
 ```
 

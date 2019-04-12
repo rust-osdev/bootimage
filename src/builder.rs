@@ -170,14 +170,21 @@ impl Builder {
             let cargo_toml_content = fs::read_to_string(&bootloader_pkg.manifest_path)
                 .map_err(|err| format!("bootloader has no valid Cargo.toml: {}", err))
                 .map_err(CreateBootimageError::BootloaderInvalid)?;
-            let cargo_toml = cargo_toml_content.parse::<toml::Value>()
+            let cargo_toml = cargo_toml_content
+                .parse::<toml::Value>()
                 .map_err(|e| format!("Failed to parse Cargo.toml of bootloader: {}", e))
                 .map_err(CreateBootimageError::BootloaderInvalid)?;
             let metadata = cargo_toml.get("package").and_then(|t| t.get("metadata"));
-            let target = metadata.and_then(|t| t.get("bootloader")).and_then(|t| t.get("target"));
-            let target_str = target.and_then(|v| v.as_str()).ok_or(CreateBootimageError::BootloaderInvalid(
+            let target = metadata
+                .and_then(|t| t.get("bootloader"))
+                .and_then(|t| t.get("target"));
+            let target_str = target
+                .and_then(|v| v.as_str())
+                .ok_or(CreateBootimageError::BootloaderInvalid(
                 "No `package.metadata.bootloader.target` key found in Cargo.toml of bootloader\n\n\
-                    (If you're using the official bootloader crate, you need at least version 0.5.1)".into()))?;
+                 (If you're using the official bootloader crate, you need at least version 0.5.1)"
+                    .into(),
+            ))?;
             bootloader_root.join(target_str)
         };
         let bootloader_features =

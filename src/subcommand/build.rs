@@ -37,4 +37,3 @@ pub(crate) fn build_impl(
 
     Ok(bootimages)
 }
-

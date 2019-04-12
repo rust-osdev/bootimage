@@ -33,5 +33,6 @@ pub(crate) fn test_help() {
 
 pub(crate) fn no_subcommand() -> ErrorMessage {
     "Please invoke `bootimage` with a subcommand (e.g. `bootimage build`).\n\n\
-    See `bootimage --help` for more information.".into()
+     See `bootimage --help` for more information."
+        .into()
 }

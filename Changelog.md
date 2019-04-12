@@ -1,3 +1,14 @@
+
+- New features for `bootimage runner`
+    - Pass additional arguments to the run command (e.g. QEMU)
+    - Consider all binaries in the `target/deps` folder as test executables
+    - Apply `test-timeout` config key when running tests in `bootimage runner`
+    - Don't apply `run-args` for test executables
+    - Add a new `test-args` config key for test arguments
+    - Add a new `test-success-exit-code` config key for interpreting an exit code as success
+        - This is useful when the `isa-debug-exit` QEMU device is used.
+    - Improve printing of the run command (print string instead of array, print non-canonicalized executable path, respect `--quiet`)
+
 # 0.7.1
 
 - Fix for backwards compatibility: Ignore `test-` executables for `bootimage run`.
