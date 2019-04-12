@@ -1,5 +1,4 @@
-0.7.2
-
+# 0.7.2
 
 - New features for `bootimage runner`
     - Pass additional arguments to the run command (e.g. QEMU)
