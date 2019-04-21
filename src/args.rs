@@ -8,17 +8,18 @@ pub(crate) fn parse_args() -> Result<Command, ErrorMessage> {
     let mut args = env::args();
     let is_cargo_bootimage = {
         let executable_name = args.next().ok_or("no first argument (executable name)")?;
-        let file_stem = Path::new(&executable_name).file_stem().and_then(|s| s.to_str());
+        let file_stem = Path::new(&executable_name)
+            .file_stem()
+            .and_then(|s| s.to_str());
         file_stem == Some("cargo-bootimage")
     };
     let first = args.next();
     match first.as_ref().map(|s| s.as_str()) {
         Some("build") => parse_build_args(args),
-        Some("bootimage") if is_cargo_bootimage => parse_build_args(args)
-            .map(|cmd| match cmd {
-                Command::BuildHelp => Command::CargoBootimageHelp,
-                cmd => cmd,
-            }),
+        Some("bootimage") if is_cargo_bootimage => parse_build_args(args).map(|cmd| match cmd {
+            Command::BuildHelp => Command::CargoBootimageHelp,
+            cmd => cmd,
+        }),
         Some("run") => parse_build_args(args).map(|cmd| match cmd {
             Command::Build(args) => Command::Run(args),
             Command::BuildHelp => Command::RunHelp,
