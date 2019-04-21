@@ -35,7 +35,7 @@ pub(crate) fn parse_args() -> Result<Command, ErrorMessage> {
         Some("--help") | Some("-h") => Ok(Command::Help),
         Some("--version") => Ok(Command::Version),
         x => {
-            println!("expected subcommand, found: {:?}", x);
+            println!("expected subcommand, found: {:?}, executable name: {:?}", x, executable_name);
             Ok(Command::NoSubcommand)
         },
     }
