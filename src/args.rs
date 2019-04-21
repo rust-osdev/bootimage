@@ -34,7 +34,10 @@ pub(crate) fn parse_args() -> Result<Command, ErrorMessage> {
         Some("runner") => parse_runner_args(args),
         Some("--help") | Some("-h") => Ok(Command::Help),
         Some("--version") => Ok(Command::Version),
-        _ => Ok(Command::NoSubcommand),
+        x => {
+            println!("expected subcommand, found: {:?}", x);
+            Ok(Command::NoSubcommand)
+        },
     }
 }
 
