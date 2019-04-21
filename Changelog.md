@@ -1,3 +1,5 @@
+- Fix `cargo bootimage` on Windows (there was a bug in the argument parsing)
+
 # 0.7.2
 
 - New features for `bootimage runner`
