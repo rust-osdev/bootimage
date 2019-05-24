@@ -299,7 +299,7 @@ impl Builder {
 
         // Pad to nearest block size
         {
-            const BLOCK_SIZE = 512;
+            const BLOCK_SIZE: u64 = 512;
             use std::fs::{OpenOptions, File};
             let mut file = OpenOptions::new().append(true).open(&output_bin_path).map_err(|err| CreateBootimageError::Io {
                 message: "failed to open boot image",
