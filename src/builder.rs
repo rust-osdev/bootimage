@@ -297,6 +297,37 @@ impl Builder {
             });
         }
 
+        // Pad to nearest block size
+        {
+            const BLOCK_SIZE: u64 = 512;
+            use std::fs::{File, OpenOptions};
+            let mut file = OpenOptions::new()
+                .write(true)
+                .open(&output_bin_path)
+                .map_err(|err| CreateBootimageError::Io {
+                    message: "failed to open boot image",
+                    error: err,
+                })?;
+            let file_size = file
+                .metadata()
+                .map_err(|err| CreateBootimageError::Io {
+                    message: "failed to get size of boot image",
+                    error: err,
+                })?
+                .len();
+            let remainder = file_size % BLOCK_SIZE;
+            let padding = if remainder > 0 {
+                BLOCK_SIZE - remainder
+            } else {
+                0
+            };
+            file.set_len(file_size + padding)
+                .map_err(|err| CreateBootimageError::Io {
+                    message: "failed to pad boot image to a multiple of the block size",
+                    error: err,
+                })?;
+        }
+
         Ok(())
     }
 }
