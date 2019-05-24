@@ -316,7 +316,11 @@ impl Builder {
                 })?
                 .len();
             let remainder = file_size % BLOCK_SIZE;
-            let padding = if remainder > 0 { BLOCK_SIZE - remainder } else { 0 };
+            let padding = if remainder > 0 {
+                BLOCK_SIZE - remainder
+            } else {
+                0
+            };
             file.set_len(file_size + padding)
                 .map_err(|err| CreateBootimageError::Io {
                     message: "failed to pad boot image to a multiple of the block size",
