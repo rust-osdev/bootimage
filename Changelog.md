@@ -1,3 +1,5 @@
+# 0.7.4
+
 - Align boot image size on a 512 byte boundary to fix boot in VirtualBox (see [#35](https://github.com/rust-osdev/bootimage/issues/35))
 
 # 0.7.3

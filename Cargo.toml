@@ -3,7 +3,7 @@ authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 description = "Tool to create a bootable OS image from a kernel binary."
 license = "MIT/Apache-2.0"
 name = "bootimage"
-version = "0.7.3"
+version = "0.7.4"
 repository = "https://github.com/rust-osdev/bootimage"
 edition = "2018"
 
