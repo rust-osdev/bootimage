@@ -1,3 +1,5 @@
+# 0.7.5
+
 - Set XBUILD_SYSROOT_PATH when building bootloader ([#41](https://github.com/rust-osdev/bootimage/pull/41))
 - Update Azure Pipelines CI script ([#40](https://github.com/rust-osdev/bootimage/pull/40))
 
