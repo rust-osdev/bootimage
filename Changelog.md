@@ -1,3 +1,6 @@
+- Set XBUILD_SYSROOT_PATH when building bootloader ([#41](https://github.com/rust-osdev/bootimage/pull/41))
+- Update Azure Pipelines CI script ([#40](https://github.com/rust-osdev/bootimage/pull/40))
+
 # 0.7.4
 
 - Align boot image size on a 512 byte boundary to fix boot in VirtualBox (see [#35](https://github.com/rust-osdev/bootimage/issues/35))
