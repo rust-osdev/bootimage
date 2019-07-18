@@ -225,6 +225,7 @@ impl Builder {
             cmd.arg("xbuild");
             cmd.arg("--manifest-path");
             cmd.arg(&bootloader_pkg.manifest_path);
+            cmd.arg("--bin").arg(&bootloader_name);
             cmd.arg("--target-dir").arg(&target_dir);
             cmd.arg("--features")
                 .arg(bootloader_features.as_slice().join(" "));
