@@ -410,7 +410,11 @@ impl fmt::Display for BuildKernelError {
                     Run `cargo install cargo-xbuild` to install it.")
             }
             BuildKernelError::XbuildFailed{stderr} => {
-                writeln!(f, "Kernel build failed:\n{}", String::from_utf8_lossy(stderr))
+                writeln!(f, "Kernel build failed")?;
+                if !stderr.is_empty() {
+                    writeln!(f, "\n{}", String::from_utf8_lossy(stderr))?;
+                }
+                Ok(())
             }
             BuildKernelError::XbuildJsonOutputInvalidUtf8(err) => {
                 writeln!(f, "Output of kernel build with --message-format=json is not valid UTF-8:\n{}", err)
@@ -481,11 +485,13 @@ impl fmt::Display for CreateBootimageError {
                 "The `bootloader` dependency has not the right format: {}",
                 err
             ),
-            CreateBootimageError::BootloaderBuildFailed { stderr } => writeln!(
-                f,
-                "Bootloader build failed:\n\n{}",
-                String::from_utf8_lossy(stderr)
-            ),
+            CreateBootimageError::BootloaderBuildFailed { stderr } => {
+                writeln!(f, "Bootloader build failed")?;
+                if !stderr.is_empty() {
+                    writeln!(f, "\n{}", String::from_utf8_lossy(stderr))?;
+                }
+                Ok(())
+            }
             CreateBootimageError::Io { message, error } => {
                 writeln!(f, "I/O error: {}: {}", message, error)
             }
