@@ -311,8 +311,8 @@ impl Builder {
         // Pad to nearest block size
         {
             const BLOCK_SIZE: u64 = 512;
-            use std::fs::{File, OpenOptions};
-            let mut file = OpenOptions::new()
+            use std::fs::OpenOptions;
+            let file = OpenOptions::new()
                 .write(true)
                 .open(&output_bin_path)
                 .map_err(|err| CreateBootimageError::Io {
