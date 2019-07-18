@@ -166,7 +166,7 @@ impl Builder {
                 "bootloader manifest has no target directory".into(),
             ),
         )?;
-        let bootloader_target = {
+        let (bootloader_target, binary_feature) = {
             let cargo_toml_content = fs::read_to_string(&bootloader_pkg.manifest_path)
                 .map_err(|err| format!("bootloader has no valid Cargo.toml: {}", err))
                 .map_err(CreateBootimageError::BootloaderInvalid)?;
@@ -185,7 +185,13 @@ impl Builder {
                  (If you're using the official bootloader crate, you need at least version 0.5.1)"
                     .into(),
             ))?;
-            bootloader_root.join(target_str)
+
+            let binary_feature = cargo_toml
+                .get("features")
+                .and_then(|f| f.get("binary"))
+                .is_some();
+
+            (bootloader_root.join(target_str), binary_feature)
         };
         let bootloader_features =
             {
@@ -201,7 +207,11 @@ impl Builder {
                     .ok_or(CreateBootimageError::CargoMetadataIncomplete {
                     key: format!("resolve[\"{}\"]", bootloader_name),
                 })?;
-                bootloader_resolve.features.clone()
+                let mut features = bootloader_resolve.features.clone();
+                if binary_feature {
+                    features.push("binary".into());
+                }
+                features
             };
 
         // build bootloader
