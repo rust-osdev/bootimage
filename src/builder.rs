@@ -166,7 +166,7 @@ impl Builder {
                 "bootloader manifest has no target directory".into(),
             ),
         )?;
-        let bootloader_target = {
+        let (bootloader_target, binary_feature) = {
             let cargo_toml_content = fs::read_to_string(&bootloader_pkg.manifest_path)
                 .map_err(|err| format!("bootloader has no valid Cargo.toml: {}", err))
                 .map_err(CreateBootimageError::BootloaderInvalid)?;
@@ -185,7 +185,13 @@ impl Builder {
                  (If you're using the official bootloader crate, you need at least version 0.5.1)"
                     .into(),
             ))?;
-            bootloader_root.join(target_str)
+
+            let binary_feature = cargo_toml
+                .get("features")
+                .and_then(|f| f.get("binary"))
+                .is_some();
+
+            (bootloader_root.join(target_str), binary_feature)
         };
         let bootloader_features =
             {
@@ -201,7 +207,11 @@ impl Builder {
                     .ok_or(CreateBootimageError::CargoMetadataIncomplete {
                     key: format!("resolve[\"{}\"]", bootloader_name),
                 })?;
-                bootloader_resolve.features.clone()
+                let mut features = bootloader_resolve.features.clone();
+                if binary_feature {
+                    features.push("binary".into());
+                }
+                features
             };
 
         // build bootloader
@@ -215,6 +225,7 @@ impl Builder {
             cmd.arg("xbuild");
             cmd.arg("--manifest-path");
             cmd.arg(&bootloader_pkg.manifest_path);
+            cmd.arg("--bin").arg(&bootloader_name);
             cmd.arg("--target-dir").arg(&target_dir);
             cmd.arg("--features")
                 .arg(bootloader_features.as_slice().join(" "));
@@ -300,8 +311,8 @@ impl Builder {
         // Pad to nearest block size
         {
             const BLOCK_SIZE: u64 = 512;
-            use std::fs::{File, OpenOptions};
-            let mut file = OpenOptions::new()
+            use std::fs::OpenOptions;
+            let file = OpenOptions::new()
                 .write(true)
                 .open(&output_bin_path)
                 .map_err(|err| CreateBootimageError::Io {
@@ -399,7 +410,11 @@ impl fmt::Display for BuildKernelError {
                     Run `cargo install cargo-xbuild` to install it.")
             }
             BuildKernelError::XbuildFailed{stderr} => {
-                writeln!(f, "Kernel build failed:\n{}", String::from_utf8_lossy(stderr))
+                writeln!(f, "Kernel build failed")?;
+                if !stderr.is_empty() {
+                    writeln!(f, "\n{}", String::from_utf8_lossy(stderr))?;
+                }
+                Ok(())
             }
             BuildKernelError::XbuildJsonOutputInvalidUtf8(err) => {
                 writeln!(f, "Output of kernel build with --message-format=json is not valid UTF-8:\n{}", err)
@@ -470,11 +485,13 @@ impl fmt::Display for CreateBootimageError {
                 "The `bootloader` dependency has not the right format: {}",
                 err
             ),
-            CreateBootimageError::BootloaderBuildFailed { stderr } => writeln!(
-                f,
-                "Bootloader build failed:\n\n{}",
-                String::from_utf8_lossy(stderr)
-            ),
+            CreateBootimageError::BootloaderBuildFailed { stderr } => {
+                writeln!(f, "Bootloader build failed")?;
+                if !stderr.is_empty() {
+                    writeln!(f, "\n{}", String::from_utf8_lossy(stderr))?;
+                }
+                Ok(())
+            }
             CreateBootimageError::Io { message, error } => {
                 writeln!(f, "I/O error: {}: {}", message, error)
             }
