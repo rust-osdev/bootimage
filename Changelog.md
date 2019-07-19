@@ -1,3 +1,5 @@
+# 0.7.6
+
 - If the bootloader has a feature named `binary`, enable it ([#43](https://github.com/rust-osdev/bootimage/pull/43))
 
 # 0.7.5
