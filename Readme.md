@@ -76,6 +76,18 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
     # Applies to `bootimage run` and `bootimage runner`
     run-args = []
 
+    # The offset used for mapping physical memory when the `map_physical_memory` feature of the
+    # bootloader crate is enabled. Must be given as a string, as TOML does not support unsigned
+    # 64-bit integers.
+    physical-memory-offset = ""
+
+    # The virtual address where the kernel's stack should be placed. Must be given as a string,
+    # as TOML does not support unsigned 64-bit integers.
+    kernel-stack-address = ""
+
+    # The size of the kernel's stack, in number of 4KiB pages.
+    kernel-stack-size = 512
+
     # Additional arguments passed to the run command for test executables
     # Applies to `bootimage runner`
     test-args = []

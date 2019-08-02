@@ -1,12 +1,12 @@
-use crate::{args::Args, builder::Builder, config, ErrorMessage};
+use crate::{args::Args, builder::Builder, ErrorMessage};
 use std::process;
 
 pub(crate) fn run(mut args: Args) -> Result<i32, ErrorMessage> {
     use crate::subcommand::build;
 
     let builder = Builder::new(args.manifest_path().clone())?;
-    let config = config::read_config(builder.kernel_manifest_path())?;
-    args.apply_default_target(&config, builder.kernel_root());
+    let config = builder.kernel_config();
+    args.apply_default_target(config, builder.kernel_root());
 
     if args.bin_name().is_none() {
         let kernel_package = builder
@@ -45,7 +45,7 @@ pub(crate) fn run(mut args: Args) -> Result<i32, ErrorMessage> {
             ),
         );
     }
-    if let Some(run_args) = config.run_args {
+    if let Some(run_args) = &config.run_args {
         command.args(run_args);
     }
     command.args(&args.run_args);

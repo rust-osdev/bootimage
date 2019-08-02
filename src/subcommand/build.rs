@@ -1,10 +1,9 @@
-use crate::{args::Args, builder::Builder, config, ErrorMessage};
+use crate::{args::Args, builder::Builder, ErrorMessage};
 use std::path::PathBuf;
 
 pub(crate) fn build(mut args: Args) -> Result<(), ErrorMessage> {
     let builder = Builder::new(args.manifest_path().clone())?;
-    let config = config::read_config(builder.kernel_manifest_path())?;
-    args.apply_default_target(&config, builder.kernel_root());
+    args.apply_default_target(builder.kernel_config(), builder.kernel_root());
 
     let quiet = args.quiet;
     build_impl(&builder, &mut args, quiet).map(|_| ())

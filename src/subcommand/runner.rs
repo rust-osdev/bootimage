@@ -1,10 +1,10 @@
-use crate::{args::RunnerArgs, builder::Builder, config, ErrorMessage};
+use crate::{args::RunnerArgs, builder::Builder, ErrorMessage};
 use std::{process, time::Duration};
 use wait_timeout::ChildExt;
 
 pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
     let builder = Builder::new(None)?;
-    let config = config::read_config(builder.kernel_manifest_path())?;
+    let config = builder.kernel_config();
     let exe_parent = args
         .executable
         .parent()
@@ -36,12 +36,12 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
         .map(|arg| arg.replace("{}", &format!("{}", bootimage_bin.display())))
         .collect();
     if is_test {
-        if let Some(args) = config.test_args {
-            run_command.extend(args);
+        if let Some(args) = &config.test_args {
+            run_command.extend(args.clone());
         }
     } else {
-        if let Some(args) = config.run_args {
-            run_command.extend(args);
+        if let Some(args) = &config.run_args {
+            run_command.extend(args.clone());
         }
     }
     if let Some(args) = args.runner_args {

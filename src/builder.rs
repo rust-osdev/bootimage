@@ -1,5 +1,5 @@
 //! Provides functions to build the kernel and the bootloader.
-
+use crate::config::{self, Config};
 use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
@@ -11,6 +11,7 @@ use std::{
 pub struct Builder {
     kernel_manifest_path: PathBuf,
     kernel_metadata: cargo_metadata::Metadata,
+    kernel_config: Config,
 }
 
 impl Builder {
@@ -22,9 +23,12 @@ impl Builder {
         let kernel_metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&kernel_manifest_path)
             .exec()?;
+        let kernel_config = config::read_config(&kernel_manifest_path)
+            .map_err(|e| BuilderError::ReadConfiguration(e))?;
         Ok(Builder {
             kernel_manifest_path,
             kernel_metadata,
+            kernel_config,
         })
     }
 
@@ -38,6 +42,11 @@ impl Builder {
         self.kernel_manifest_path
             .parent()
             .expect("kernel manifest has no parent directory")
+    }
+
+    /// Returns the kernel configuration as specified in the `Cargo.toml` of the kernel.
+    pub fn kernel_config(&self) -> &Config {
+        &self.kernel_config
     }
 
     /// Returns a reference to the cargo metadata object.
@@ -219,6 +228,7 @@ impl Builder {
             println!("Building bootloader");
         }
 
+        let config = &self.kernel_config;
         let cargo = std::env::var("CARGO").unwrap_or("cargo".to_owned());
         let build_command = || {
             let mut cmd = process::Command::new(&cargo);
@@ -234,6 +244,16 @@ impl Builder {
             cmd.env("KERNEL", kernel_bin_path);
             cmd.env_remove("RUSTFLAGS");
             cmd.env("XBUILD_SYSROOT_PATH", target_dir.join("bootloader-sysroot")); // for cargo-xbuild
+            // For the bootloader's build script
+            if let Some(physical_memory_offset) = config.physical_memory_offset {
+                cmd.env("BOOTLOADER_PHYSICAL_MEMORY_OFFSET", physical_memory_offset.to_string());
+            }
+            if let Some(kernel_stack_address) = config.kernel_stack_address {
+                cmd.env("BOOTLOADER_KERNEL_STACK_ADDRESS", kernel_stack_address.to_string());
+            }
+            if let Some(kernel_stack_size) = config.kernel_stack_size {
+                cmd.env("BOOTLOADER_KERNEL_STACK_SIZE", kernel_stack_size.to_string());
+            }
             cmd
         };
 
@@ -350,6 +370,8 @@ pub enum BuilderError {
     LocateCargoManifest(locate_cargo_manifest::LocateManifestError),
     /// Error while running `cargo metadata`
     CargoMetadata(cargo_metadata::Error),
+    /// Error processing the bootimage configuration section in the cargo manifest file
+    ReadConfiguration(crate::ErrorMessage),
 }
 
 impl fmt::Display for BuilderError {
@@ -363,6 +385,11 @@ impl fmt::Display for BuilderError {
             BuilderError::CargoMetadata(err) => writeln!(
                 f,
                 "Error while running `cargo metadata` for current project: {:?}",
+                err
+            ),
+            BuilderError::ReadConfiguration(err) => writeln!(
+                f,
+                "Error while reading the Cargo.toml configuration: {:?}",
                 err
             ),
         }

@@ -21,6 +21,15 @@ pub struct Config {
     ///
     /// Applies to `bootimage run` and `bootimage runner`.
     pub run_args: Option<Vec<String>>,
+    /// The offset used for mapping physical memory when the `map_physical_memory` feature of the
+    /// bootloader is enabled. If not provided, the bootloader dynamically finds a free virtual
+    /// address region.
+    pub physical_memory_offset: Option<u64>,
+    /// The address of the kernel stack. If not provided, the bootloader dynamically finds a free
+    /// virtual address region.
+    pub kernel_stack_address: Option<u64>,
+    /// The size of the kernel stack, in number of 4KiB pages. Defaults to 512.
+    pub kernel_stack_size: Option<u64>,
     /// Additional arguments passed to the runner for test binaries
     ///
     /// Applies to `bootimage runner`.
@@ -99,6 +108,40 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 }
                 config.run_args = Some(args);
             }
+
+            ("physical-memory-offset", Value::Integer(_)) => {
+                Err(format!("physical-memory-offset must be given as a string, as TOML does not support \
+                unsigned 64-bit integers"))?
+            }
+            ("kernel-stack-address", Value::Integer(_)) => {
+                Err(format!("kernel-stack-address must be given as a string, as TOML does not support \
+                unsigned 64-bit integers"))?
+            }
+            ("physical-memory-offset", Value::String(s)) => {
+                let offset = if s.starts_with("0x") {
+                    u64::from_str_radix(&s[2..], 16)
+                } else {
+                    u64::from_str_radix(&s, 10)
+                };
+                let offset = offset.map_err(|e| format!("failed to parse physical-memory-offset as u64: {} (was \"{}\")", e, s))?;
+                config.physical_memory_offset = Some(offset);
+            }
+            ("kernel-stack-address", Value::String(s)) => {
+                let address = if s.starts_with("0x") {
+                    u64::from_str_radix(&s[2..], 16)
+                } else {
+                    u64::from_str_radix(&s, 10)
+                };
+                let address = address.map_err(|e| format!("failed to parse kernel-stack-address as u64: {} (was \"{}\")", e, s))?;
+                config.kernel_stack_address = Some(address);
+            }
+            ("kernel-stack-size", Value::Integer(size)) => {
+                if size.is_negative() {
+                    Err(format!("kernel-stack-size must not be negative"))?
+                } else {
+                    config.kernel_stack_size = Some(size as u64);
+                }
+            }
             ("test-args", Value::Array(array)) => {
                 let mut args = Vec::new();
                 for value in array {
@@ -124,6 +167,9 @@ struct ConfigBuilder {
     default_target: Option<String>,
     run_command: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
+    physical_memory_offset: Option<u64>,
+    kernel_stack_address: Option<u64>,
+    kernel_stack_size: Option<u64>,
     test_args: Option<Vec<String>>,
     test_timeout: Option<u32>,
     test_success_exit_code: Option<i32>,
@@ -139,6 +185,9 @@ impl Into<Config> for ConfigBuilder {
                 "format=raw,file={}".into(),
             ]),
             run_args: self.run_args,
+            physical_memory_offset: self.physical_memory_offset,
+            kernel_stack_address: self.kernel_stack_address,
+            kernel_stack_size: self.kernel_stack_size,
             test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
             test_success_exit_code: self.test_success_exit_code,
