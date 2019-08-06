@@ -1,3 +1,5 @@
+- Pass location of kernel's Cargo.toml to bootloader ([#45](https://github.com/rust-osdev/bootimage/pull/45))
+
 # 0.7.6
 
 - If the bootloader has a feature named `binary`, enable it ([#43](https://github.com/rust-osdev/bootimage/pull/43))
