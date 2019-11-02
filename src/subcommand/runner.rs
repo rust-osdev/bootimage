@@ -73,6 +73,15 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
                 return Err(ErrorMessage::from("Timed Out"));
             }
             Some(exit_status) => {
+                #[cfg(unix)]
+                {
+                    if exit_status.code().is_none() {
+                        use std::os::unix::process::ExitStatusExt;
+                        if let Some(signal) = exit_status.signal() {
+                            eprintln!("QEMU process was terminated by signal {}", signal);
+                        }
+                    }
+                }
                 let qemu_exit_code = exit_status.code().ok_or("Failed to read QEMU exit code")?;
                 match config.test_success_exit_code {
                     Some(code) if qemu_exit_code == code => 0,
