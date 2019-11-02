@@ -72,10 +72,13 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
                     .map_err(|e| format!("Failed to wait for QEMU process: {}", e))?;
                 return Err(ErrorMessage::from("Timed Out"));
             }
-            Some(exit_status) => match config.test_success_exit_code {
-                Some(code) if exit_status.code() == Some(code) => 0,
-                other => other.unwrap_or(1),
-            },
+            Some(exit_status) => {
+                let qemu_exit_code = exit_status.code().ok_or("Failed to read QEMU exit code")?;
+                match config.test_success_exit_code {
+                    Some(code) if qemu_exit_code == code => 0,
+                    _ => qemu_exit_code,
+                }
+            }
         }
     } else {
         let status = command
