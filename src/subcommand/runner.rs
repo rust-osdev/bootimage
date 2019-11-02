@@ -72,8 +72,8 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
                     .map_err(|e| format!("Failed to wait for QEMU process: {}", e))?;
                 return Err(ErrorMessage::from("Timed Out"));
             }
-            Some(exit_status) => match config.test_success_exit_code {
-                Some(code) if exit_status.code() == Some(code) => 0,
+            Some(exit_status) => match dbg!(config.test_success_exit_code) {
+                Some(code) if dbg!(exit_status.code()) == dbg!(Some(code)) => 0,
                 other => other.unwrap_or(1),
             },
         }
@@ -84,5 +84,5 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
         status.code().unwrap_or(1)
     };
 
-    Ok(exit_code)
+    dbg!(Ok(exit_code))
 }

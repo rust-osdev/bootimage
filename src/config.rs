@@ -77,7 +77,7 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 config.test_timeout = Some(timeout as u32);
             }
             ("test-success-exit-code", Value::Integer(exit_code)) => {
-                config.test_success_exit_code = Some(exit_code as i32);
+                config.test_success_exit_code = Some(dbg!(exit_code) as i32);
             }
             ("run-command", Value::Array(array)) => {
                 let mut command = Vec::new();
