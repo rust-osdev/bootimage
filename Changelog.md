@@ -1,3 +1,5 @@
+# 0.7.8
+
 - Don't exit with expected exit code when failed to read QEMU exit code ([#47](https://github.com/rust-osdev/bootimage/pull/47))
 
 # 0.7.7

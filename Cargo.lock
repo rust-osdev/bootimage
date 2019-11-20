@@ -10,7 +10,7 @@ dependencies = [
 
 [[package]]
 name = "bootimage"
-version = "0.7.7"
+version = "0.7.8"
 dependencies = [
  "cargo_metadata 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "json 0.11.13 (registry+https://github.com/rust-lang/crates.io-index)",
