@@ -16,7 +16,7 @@ jobs:
         image_name: 'ubuntu-16.04'
         rustup_toolchain: stable
       mac:
-        image_name: 'macos-10.13'
+        image_name: 'macOS-10.15'
         rustup_toolchain: stable
       windows:
         image_name: 'vs2017-win2016'
@@ -75,7 +75,7 @@ jobs:
         image_name: 'ubuntu-16.04'
         rustup_toolchain: nightly
       mac:
-        image_name: 'macos-10.13'
+        image_name: 'macos-10.15'
         rustup_toolchain: nightly
       windows:
         image_name: 'vs2017-win2016'
