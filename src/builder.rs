@@ -233,7 +233,7 @@ impl Builder {
             cmd.arg("--release");
             cmd.env("KERNEL", kernel_bin_path);
             cmd.env("KERNEL_MANIFEST", &self.kernel_manifest_path);
-            cmd.env_remove("RUSTFLAGS");
+            cmd.env("RUSTFLAGS", "");
             cmd.env("XBUILD_SYSROOT_PATH", target_dir.join("bootloader-sysroot")); // for cargo-xbuild
             cmd
         };
