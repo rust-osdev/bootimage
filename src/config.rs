@@ -30,6 +30,9 @@ pub struct Config {
     /// An exit code that should be considered as success for test executables (applies to
     /// `bootimage runner`)
     pub test_success_exit_code: Option<i32>,
+    /// The workspace subcrate to use for `bootimage` runs. This should be specified in the
+    /// workspace's `Cargo.toml`, pointing to a crate that is a member of the workspace.
+    pub workspace_subcrate: Option<String>,
     non_exhaustive: (),
 }
 
@@ -109,6 +112,7 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 }
                 config.test_args = Some(args);
             }
+            ("workspace-subcrate", Value::String(s)) => config.workspace_subcrate = From::from(s),
             (key, value) => Err(format!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
@@ -127,6 +131,7 @@ struct ConfigBuilder {
     test_args: Option<Vec<String>>,
     test_timeout: Option<u32>,
     test_success_exit_code: Option<i32>,
+    workspace_subcrate: Option<String>,
 }
 
 impl Into<Config> for ConfigBuilder {
@@ -142,6 +147,7 @@ impl Into<Config> for ConfigBuilder {
             test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
             test_success_exit_code: self.test_success_exit_code,
+            workspace_subcrate: self.workspace_subcrate,
             non_exhaustive: (),
         }
     }

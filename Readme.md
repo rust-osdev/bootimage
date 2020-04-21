@@ -85,6 +85,11 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
 
     # The timeout for running a test through `bootimage test` or `bootimage runner` (in seconds)
     test-timeout = 300
+
+    # If your root crate is a workspace, and the crate you wish to compile as
+    # the kernel is a subcrate of that workspace, specifying that subcrate's
+    # name here will build that crate when `bootimage` is run from the root
+    workspace-subcrate = "example-kernel-amd64"
 ```
 
 ## License

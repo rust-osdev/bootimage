@@ -1,5 +1,6 @@
 //! Provides functions to build the kernel and the bootloader.
 
+use crate::config::read_config;
 use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
@@ -17,11 +18,33 @@ impl Builder {
     /// Creates a new Builder by searching for the kernel's Cargo manifest and running
     /// `cargo metadata` on it.
     pub fn new(manifest_path: Option<PathBuf>) -> Result<Self, BuilderError> {
-        let kernel_manifest_path =
+        // Get the closest Cargo manifest. This could be our standard kernel manifest or
+        // it could be a workspace manifest.
+        let mut kernel_manifest_path =
             manifest_path.unwrap_or(locate_cargo_manifest::locate_manifest()?);
+
+        // Check if this is a workspace manifest that specifies a subcrate to
+        // use for the `bootimage` tool by parsing this manifest as it would be
+        // parsed later on, looking for the `workspace-subcrate` manifest key
+        if let Ok(manifest_config) = read_config(&kernel_manifest_path) {
+            if let Some(subcrate) = manifest_config.workspace_subcrate {
+                // Modify manifest path to point to subcrate. Pop the existing Cargo.toml, push
+                // the subcrate name, and then push Cargo.toml again.
+                kernel_manifest_path.pop();
+                kernel_manifest_path.push(&subcrate);
+                kernel_manifest_path.push("Cargo.toml");
+
+                if !kernel_manifest_path.exists() {
+                    Err(BuilderError::WorkspaceSubcrate(subcrate))?;
+                }
+            }
+        }
+
+        // Now that we know which crate we're actually building, get that crate's metadata
         let kernel_metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&kernel_manifest_path)
             .exec()?;
+
         Ok(Builder {
             kernel_manifest_path,
             kernel_metadata,
@@ -74,6 +97,7 @@ impl Builder {
         let mut cmd = process::Command::new(&cargo);
         cmd.arg("xbuild");
         cmd.args(args);
+        cmd.current_dir(self.kernel_root());
         if !quiet {
             cmd.stdout(process::Stdio::inherit());
             cmd.stderr(process::Stdio::inherit());
@@ -102,6 +126,7 @@ impl Builder {
         cmd.arg("xbuild");
         cmd.args(args);
         cmd.arg("--message-format").arg("json");
+        cmd.current_dir(self.kernel_root());
         let output = cmd.output().map_err(|err| BuildKernelError::Io {
             message: "failed to execute kernel build with json output",
             error: err,
@@ -351,6 +376,8 @@ pub enum BuilderError {
     LocateCargoManifest(locate_cargo_manifest::LocateManifestError),
     /// Error while running `cargo metadata`
     CargoMetadata(cargo_metadata::Error),
+    /// Failed to locate specified workspace subcrate
+    WorkspaceSubcrate(String),
 }
 
 impl fmt::Display for BuilderError {
@@ -365,6 +392,11 @@ impl fmt::Display for BuilderError {
                 f,
                 "Error while running `cargo metadata` for current project: {:?}",
                 err
+            ),
+            BuilderError::WorkspaceSubcrate(crate_name) => writeln!(
+                f,
+                "Could not find Cargo.toml for specified workspace subcrate {:?}",
+                crate_name
             ),
         }
     }
