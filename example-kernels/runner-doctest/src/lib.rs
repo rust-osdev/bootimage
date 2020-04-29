@@ -16,7 +16,6 @@
 ///     unsafe { exit_qemu(ExitCode::Success); }
 /// }
 /// ```
-#[allow(clippy::needless_doctest_main)]
 pub fn add(a: u32, b: u32) -> u32 {
     a + b
 }
@@ -33,7 +32,6 @@ pub fn add(a: u32, b: u32) -> u32 {
 ///     unsafe { exit_qemu(ExitCode::Success); }
 /// }
 /// ```
-#[allow(clippy::needless_doctest_main)]
 pub fn mul(a: u32, b: u32) -> u32 {
     a * b
 }
