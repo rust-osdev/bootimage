@@ -36,6 +36,7 @@ pub fn mul(a: u32, b: u32) -> u32 {
     a * b
 }
 
+#[cfg(test)]
 fn test_runner(tests: &[&dyn Fn()]) {
     for test in tests.iter() {
         test();
