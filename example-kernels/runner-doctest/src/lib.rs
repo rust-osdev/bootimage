@@ -11,7 +11,7 @@
 /// #![no_main]
 /// use runner_doctest::{add, exit_qemu, ExitCode};
 /// #[export_name = "_start"]
-/// extern "C" fn main() {
+/// extern "C" fn start() {
 ///     assert_eq!(add(1, 2), 3);
 ///     unsafe { exit_qemu(ExitCode::Success); }
 /// }
@@ -27,7 +27,7 @@ pub fn add(a: u32, b: u32) -> u32 {
 /// #![no_main]
 /// use runner_doctest::{mul, exit_qemu, ExitCode};
 /// #[export_name = "_start"]
-/// extern "C" fn main() {
+/// extern "C" fn start() {
 ///     assert_eq!(mul(2, 3), 6);
 ///     unsafe { exit_qemu(ExitCode::Success); }
 /// }
