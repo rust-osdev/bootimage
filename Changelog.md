@@ -1,3 +1,5 @@
+# 0.7.10
+
 - Add support for doctests ([#52](https://github.com/rust-osdev/bootimage/pull/52))
 
 # 0.7.9
