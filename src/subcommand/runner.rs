@@ -9,7 +9,13 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32, ErrorMessage> {
         .executable
         .parent()
         .ok_or("kernel executable has no parent")?;
-    let is_test = exe_parent.ends_with("deps");
+    let is_doctest = exe_parent
+        .file_name()
+        .ok_or("kernel executable's parent has no file name")?
+        .to_str()
+        .ok_or("kernel executable's parent file name is not valid UTF-8")?
+        .starts_with("rustdoctest");
+    let is_test = is_doctest || exe_parent.ends_with("deps");
 
     let bootimage_bin = {
         let file_stem = args

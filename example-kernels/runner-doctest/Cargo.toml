@@ -1,0 +1,13 @@
+[package]
+name = "runner-doctest"
+version = "0.1.0"
+authors = ["Philipp Oppermann <dev@phil-opp.com>"]
+edition = "2018"
+
+[dependencies]
+bootloader = "0.6.4"
+x86_64 = "0.5.3"
+
+[package.metadata.bootimage]
+test-success-exit-code = 33 # (0x10 << 1) | 1
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-display", "none"]

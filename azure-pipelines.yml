@@ -191,6 +191,10 @@ jobs:
     workingDirectory: example-kernels/runner
     displayName: 'Run `cargo xrun` for "runner" kernel'
 
+  - script: cargo xtest -Z doctest-xcompile
+    workingDirectory: example-kernels/runner-doctest
+    displayName: 'Run `cargo xtest -Z doctest-xcompile` for "runner-doctest" kernel'
+
   - script: cargo xtest
     workingDirectory: example-kernels/runner-test
     displayName: 'Run `cargo xtest` for "runner-test" kernel'
