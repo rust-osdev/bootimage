@@ -1,3 +1,5 @@
+- Add support for doctests ([#52](https://github.com/rust-osdev/bootimage/pull/52))
+
 # 0.7.9
 
 - Set empty RUSTFLAGS to ensure that no .cargo/config applies ([#51](https://github.com/rust-osdev/bootimage/pull/51))
