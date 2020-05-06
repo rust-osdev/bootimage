@@ -10,11 +10,3 @@ BUILD_OPTS:
     `cargo build --help` for possible options). After building, a bootloader
     is downloaded and built, and then combined with the kernel into a bootable
     disk image.
-
-CONFIGURATION:
-    The behavior of `bootimage build` can be configured through a
-    `[package.metadata.bootimage]` table in the `Cargo.toml`. The following
-    options are available to configure the build:
-
-    [package.metadata.bootimage]
-    default-target = ""         This target is used if no `--target` is passed

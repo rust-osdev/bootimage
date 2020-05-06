@@ -11,8 +11,6 @@ use toml::Value;
 /// options.
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// This target is used if no `--target` argument is passed
-    pub default_target: Option<String>,
     /// The run command that is invoked on `bootimage run` or `bootimage runner`
     ///
     /// The substring "{}" will be replaced with the path to the bootable disk image.
@@ -69,7 +67,6 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
 
     for (key, value) in metadata {
         match (key.as_str(), value.clone()) {
-            ("default-target", Value::String(s)) => config.default_target = From::from(s),
             ("test-timeout", Value::Integer(timeout)) if timeout.is_negative() => {
                 Err(format!("test-timeout must not be negative"))?
             }
@@ -121,7 +118,6 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
 
 #[derive(Default)]
 struct ConfigBuilder {
-    default_target: Option<String>,
     run_command: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
     test_args: Option<Vec<String>>,
@@ -132,7 +128,6 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
-            default_target: self.default_target,
             run_command: self.run_command.unwrap_or(vec![
                 "qemu-system-x86_64".into(),
                 "-drive".into(),
