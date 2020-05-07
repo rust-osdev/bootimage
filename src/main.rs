@@ -57,7 +57,7 @@ pub fn main() -> Result<()> {
 }
 
 pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
-    let builder = Builder::new(None)?;
+    let mut builder = Builder::new(None)?;
     let config = config::read_config(builder.manifest_path())?;
     let exe_parent = args
         .executable

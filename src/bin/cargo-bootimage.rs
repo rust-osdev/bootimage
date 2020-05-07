@@ -42,7 +42,7 @@ pub fn main() -> Result<()> {
 }
 
 fn build(args: BuildArgs) -> Result<()> {
-    let builder = Builder::new(args.manifest_path().map(PathBuf::from))?;
+    let mut builder = Builder::new(args.manifest_path().map(PathBuf::from))?;
     let quiet = args.quiet();
 
     let executables = builder.build_kernel(&args.cargo_args(), quiet)?;

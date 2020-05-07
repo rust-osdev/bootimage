@@ -1,5 +1,6 @@
 //! Provides functions to build the kernel and the bootloader.
 
+use cargo_metadata::Metadata;
 use error::{BootloaderError, BuildKernelError, BuilderError, CreateBootimageError};
 use std::{
     path::{Path, PathBuf},
@@ -16,6 +17,7 @@ pub mod error;
 /// Allows building the kernel and creating a bootable disk image with it.
 pub struct Builder {
     manifest_path: PathBuf,
+    project_metadata: Option<Metadata>,
 }
 
 impl Builder {
@@ -24,7 +26,10 @@ impl Builder {
     /// If None is passed for `manifest_path`, it is automatically searched.
     pub fn new(manifest_path: Option<PathBuf>) -> Result<Self, BuilderError> {
         let manifest_path = manifest_path.unwrap_or(locate_cargo_manifest::locate_manifest()?);
-        Ok(Builder { manifest_path })
+        Ok(Builder {
+            manifest_path,
+            project_metadata: None,
+        })
     }
 
     /// Returns the path to the Cargo.toml file of the project.
@@ -111,17 +116,17 @@ impl Builder {
     ///
     /// If the quiet argument is set to true, all output to stdout is suppressed.
     pub fn create_bootimage(
-        &self,
+        &mut self,
         bin_name: &str,
         bin_path: &Path,
         output_bin_path: &Path,
         quiet: bool,
     ) -> Result<(), CreateBootimageError> {
-        let project_metadata = cargo_metadata::MetadataCommand::new()
-            .manifest_path(&self.manifest_path)
-            .exec()?;
-        let bootloader_build_config =
-            bootloader::BuildConfig::from_metadata(&project_metadata, bin_name, bin_path)?;
+        let bootloader_build_config = bootloader::BuildConfig::from_metadata(
+            self.project_metadata()?,
+            kernel_manifest_path,
+            bin_path,
+        )?;
 
         // build bootloader
         if !quiet {
@@ -180,5 +185,15 @@ impl Builder {
         disk_image::create_disk_image(&bootloader_elf_path, output_bin_path)?;
 
         Ok(())
+    }
+
+    fn project_metadata(&mut self) -> Result<&Metadata, cargo_metadata::Error> {
+        if let Some(ref metadata) = self.project_metadata {
+            return Ok(metadata);
+        }
+        let metadata = cargo_metadata::MetadataCommand::new()
+            .manifest_path(&self.manifest_path)
+            .exec()?;
+        Ok(self.project_metadata.get_or_insert(metadata))
     }
 }
