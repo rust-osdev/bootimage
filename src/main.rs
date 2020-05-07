@@ -30,9 +30,12 @@ pub fn main() -> Result<()> {
             help::print_help();
             return Ok(())
         }
-        other => return Err(anyhow!(
-            "Unsupported subcommand `{:?}`. See `bootimage --help` for an overview of supported programs.", other
-        ))
+        Some(other) => return Err(anyhow!(
+            "Unsupported subcommand `{:?}`. See `bootimage --help` for an overview of supported subcommands.", other
+        )),
+        None => return Err(anyhow!(
+            "Please invoke bootimage with a subcommand. See `bootimage --help` for more information."
+        )),
     }
 
     let exit_code = match RunnerCommand::parse_args(raw_args)? {
