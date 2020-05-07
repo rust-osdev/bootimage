@@ -96,12 +96,6 @@ pub enum BootloaderError {
     /// Bootloader dependency has not the right format
     #[error("The `bootloader` dependency has not the right format: {0}")]
     BootloaderInvalid(String),
-    /// Could not find kernel package in cargo metadata
-    #[error("Could not find package for binary `{bin_name}` in cargo metadata output")]
-    KernelBinPackageNotFound {
-        /// The name of the kernel binary
-        bin_name: String,
-    },
     /// Could not find some required information in the `cargo metadata` output
     #[error("Could not find required key `{key}` in cargo metadata output")]
     CargoMetadataIncomplete {
@@ -127,6 +121,7 @@ pub enum DiskImageError {
     /// The llvm-tools component did not contain the required `llvm-objcopy` executable
     #[error("Could not find `llvm-objcopy` in the `llvm-tools-preview` rustup component.")]
     LlvmObjcopyNotFound,
+
     /// The `llvm-objcopy` command failed
     #[error("Failed to run `llvm-objcopy`: {}", String::from_utf8_lossy(.stderr))]
     ObjcopyFailed {
