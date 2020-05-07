@@ -100,14 +100,14 @@ jobs:
       run: |
         qemu-system-x86_64 -drive format=raw,file=target/x86_64-bootimage-example-kernels/debug/bootimage-basic.bin -device isa-debug-exit,iobase=0xf4,iosize=0x04 -display none
         if [ $? -eq 103 ]; then (exit 0); else (exit 1); fi
-      shell: bash
+      shell: bash {0}
       working-directory: example-kernels
 
     - name: 'Run `cargo xrun` for "runner" kernel'
       run: |
         cargo xrun
         if [ $? -eq 109 ]; then (exit 0); else (exit 1); fi
-      shell: bash
+      shell: bash {0}
       working-directory: example-kernels/runner
 
     - run: cargo xtest -Z doctest-xcompile
