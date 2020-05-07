@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, path::PathBuf};
 use thiserror::Error;
 
 /// Represents an error that occurred while creating a new `Builder`.
@@ -93,9 +93,20 @@ pub enum BootloaderError {
         You need to add a dependency on a crate named `bootloader` in your Cargo.toml."
     )]
     BootloaderNotFound,
+
     /// Bootloader dependency has not the right format
     #[error("The `bootloader` dependency has not the right format: {0}")]
     BootloaderInvalid(String),
+
+    /// Could not find kernel package in cargo metadata
+    #[error(
+        "Could not find package with manifest path `{manifest_path}` in cargo metadata output"
+    )]
+    KernelPackageNotFound {
+        /// The manifest path of the kernel package
+        manifest_path: PathBuf,
+    },
+
     /// Could not find some required information in the `cargo metadata` output
     #[error("Could not find required key `{key}` in cargo metadata output")]
     CargoMetadataIncomplete {

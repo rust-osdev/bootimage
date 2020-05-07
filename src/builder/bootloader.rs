@@ -27,7 +27,9 @@ impl BuildConfig {
             .packages
             .iter()
             .find(|p| p.manifest_path == kernel_manifest_path)
-            .unwrap();
+            .ok_or_else(|| BootloaderError::KernelPackageNotFound {
+                manifest_path: kernel_manifest_path.to_owned(),
+            })?;
 
         let bootloader_pkg = bootloader_package(project_metadata, kernel_pkg)?;
         let bootloader_root = bootloader_pkg.manifest_path.parent().ok_or_else(|| {
