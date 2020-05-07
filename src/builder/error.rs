@@ -100,7 +100,7 @@ pub enum BootloaderError {
     #[error("Could not find package for binary `{bin_name}` in cargo metadata output")]
     KernelBinPackageNotFound {
         /// The name of the kernel binary
-        bin_name: String
+        bin_name: String,
     },
     /// Could not find some required information in the `cargo metadata` output
     #[error("Could not find required key `{key}` in cargo metadata output")]

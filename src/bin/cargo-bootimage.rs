@@ -4,7 +4,10 @@ use bootimage::{
     builder::Builder,
     help,
 };
-use std::{env, path::{PathBuf, Path}};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 pub fn main() -> Result<()> {
     let mut raw_args = env::args();
