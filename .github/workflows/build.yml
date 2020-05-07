@@ -55,7 +55,7 @@ jobs:
         RUSTFLAGS: "-D warnings"
 
     - name: "Install it"
-      run: cargo install --path . --debug
+      run: cargo install --path .
 
     - name: "Upload Artifact"
       uses: actions/upload-artifact@v2
