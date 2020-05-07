@@ -3,11 +3,10 @@ use anyhow::{anyhow, Context, Result};
 use bootimage::{
     args::{RunnerArgs, RunnerCommand},
     builder::Builder,
-    config, help,
+    config, help, run,
 };
+use std::process;
 use std::{env, path::Path};
-use std::{process, time::Duration};
-use wait_timeout::ChildExt;
 
 pub fn main() -> Result<()> {
     let mut raw_args = env::args();
@@ -93,67 +92,7 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         args.quiet,
     )?;
 
-    let mut run_command: Vec<_> = config
-        .run_command
-        .iter()
-        .map(|arg| arg.replace("{}", &format!("{}", output_bin_path.display())))
-        .collect();
-    if is_test {
-        if let Some(args) = config.test_args {
-            run_command.extend(args);
-        }
-    } else if let Some(args) = config.run_args {
-        run_command.extend(args);
-    }
-    if let Some(args) = args.runner_args {
-        run_command.extend(args);
-    }
-
-    if !args.quiet {
-        println!("Running: `{}`", run_command.join(" "));
-    }
-    let mut command = process::Command::new(&run_command[0]);
-    command.args(&run_command[1..]);
-
-    let exit_code = if is_test {
-        let mut child = command
-            .spawn()
-            .with_context(|| format!("Failed to launch QEMU: {:?}", command))?;
-        let timeout = Duration::from_secs(config.test_timeout.into());
-        match child
-            .wait_timeout(timeout)
-            .context("Failed to wait with timeout")?
-        {
-            None => {
-                child.kill().context("Failed to kill QEMU")?;
-                child.wait().context("Failed to wait for QEMU process")?;
-                return Err(anyhow!("Timed Out"));
-            }
-            Some(exit_status) => {
-                #[cfg(unix)]
-                {
-                    if exit_status.code().is_none() {
-                        use std::os::unix::process::ExitStatusExt;
-                        if let Some(signal) = exit_status.signal() {
-                            eprintln!("QEMU process was terminated by signal {}", signal);
-                        }
-                    }
-                }
-                let qemu_exit_code = exit_status
-                    .code()
-                    .ok_or_else(|| anyhow!("Failed to read QEMU exit code"))?;
-                match config.test_success_exit_code {
-                    Some(code) if qemu_exit_code == code => 0,
-                    _ => qemu_exit_code,
-                }
-            }
-        }
-    } else {
-        let status = command
-            .status()
-            .with_context(|| format!("Failed to execute `{:?}`", command))?;
-        status.code().unwrap_or(1)
-    };
+    let exit_code = run::run(config, args, &output_bin_path, is_test)?;
 
     Ok(exit_code)
 }

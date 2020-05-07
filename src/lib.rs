@@ -7,6 +7,7 @@
 pub mod args;
 pub mod builder;
 pub mod config;
+pub mod run;
 
 /// Contains help messages for the command line application.
 pub mod help;
