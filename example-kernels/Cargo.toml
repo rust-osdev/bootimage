@@ -1,11 +1,7 @@
 [workspace]
 members = [
     "basic",
-    "default-target-bootimage",
-    "default-target-cargo",
     "runner",
     "runner-doctest",
     "runner-test",
-    "testing-qemu-exit-code",
-    "testing-serial-result",
 ]

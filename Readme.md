@@ -64,9 +64,6 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
 
 ```toml
     [package.metadata.bootimage]
-    # This target is used if no `--target` is passed
-    default-target = ""
-
     # The command invoked with the created bootimage (the "{}" will be replaced
     # with the path to the bootable disk image)
     # Applies to `bootimage run` and `bootimage runner`

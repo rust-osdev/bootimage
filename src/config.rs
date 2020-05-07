@@ -1,6 +1,6 @@
 //! Parses the `package.metadata.bootimage` configuration table
 
-use crate::ErrorMessage;
+use anyhow::{anyhow, Context, Result};
 use std::path::Path;
 use toml::Value;
 
@@ -10,9 +10,8 @@ use toml::Value;
 /// in the `Cargo.toml` file of the kernel. This struct represents the parsed configuration
 /// options.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct Config {
-    /// This target is used if no `--target` argument is passed
-    pub default_target: Option<String>,
     /// The run command that is invoked on `bootimage run` or `bootimage runner`
     ///
     /// The substring "{}" will be replaced with the path to the bootable disk image.
@@ -30,26 +29,24 @@ pub struct Config {
     /// An exit code that should be considered as success for test executables (applies to
     /// `bootimage runner`)
     pub test_success_exit_code: Option<i32>,
-    non_exhaustive: (),
 }
 
-pub(crate) fn read_config(manifest_path: &Path) -> Result<Config, ErrorMessage> {
-    let config = read_config_inner(manifest_path)
-        .map_err(|err| format!("Failed to read bootimage configuration: {:?}", err))?;
-    Ok(config)
+/// Reads the configuration from a `package.metadata.bootimage` in the given Cargo.toml.
+pub fn read_config(manifest_path: &Path) -> Result<Config> {
+    read_config_inner(manifest_path).context("Failed to read bootimage configuration")
 }
 
-pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMessage> {
+fn read_config_inner(manifest_path: &Path) -> Result<Config> {
     use std::{fs::File, io::Read};
     let cargo_toml: Value = {
         let mut content = String::new();
         File::open(manifest_path)
-            .map_err(|e| format!("Failed to open Cargo.toml: {}", e))?
+            .context("Failed to open Cargo.toml")?
             .read_to_string(&mut content)
-            .map_err(|e| format!("Failed to read Cargo.toml: {}", e))?;
+            .context("Failed to read Cargo.toml")?;
         content
             .parse::<Value>()
-            .map_err(|e| format!("Failed to parse Cargo.toml: {}", e))?
+            .context("Failed to parse Cargo.toml")?
     };
 
     let metadata = cargo_toml
@@ -62,16 +59,15 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
         }
         Some(metadata) => metadata
             .as_table()
-            .ok_or(format!("Bootimage configuration invalid: {:?}", metadata))?,
+            .ok_or_else(|| anyhow!("Bootimage configuration invalid: {:?}", metadata))?,
     };
 
     let mut config = ConfigBuilder::default();
 
     for (key, value) in metadata {
         match (key.as_str(), value.clone()) {
-            ("default-target", Value::String(s)) => config.default_target = From::from(s),
             ("test-timeout", Value::Integer(timeout)) if timeout.is_negative() => {
-                Err(format!("test-timeout must not be negative"))?
+                return Err(anyhow!("test-timeout must not be negative"))
             }
             ("test-timeout", Value::Integer(timeout)) => {
                 config.test_timeout = Some(timeout as u32);
@@ -84,7 +80,7 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 for value in array {
                     match value {
                         Value::String(s) => command.push(s),
-                        _ => Err(format!("run-command must be a list of strings"))?,
+                        _ => return Err(anyhow!("run-command must be a list of strings")),
                     }
                 }
                 config.run_command = Some(command);
@@ -94,7 +90,7 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 for value in array {
                     match value {
                         Value::String(s) => args.push(s),
-                        _ => Err(format!("run-args must be a list of strings"))?,
+                        _ => return Err(anyhow!("run-args must be a list of strings")),
                     }
                 }
                 config.run_args = Some(args);
@@ -104,16 +100,19 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
                 for value in array {
                     match value {
                         Value::String(s) => args.push(s),
-                        _ => Err(format!("test-args must be a list of strings"))?,
+                        _ => return Err(anyhow!("test-args must be a list of strings")),
                     }
                 }
                 config.test_args = Some(args);
             }
-            (key, value) => Err(format!(
-                "unexpected `package.metadata.bootimage` \
+            (key, value) => {
+                return Err(anyhow!(
+                    "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
-                key, value
-            ))?,
+                    key,
+                    value
+                ))
+            }
         }
     }
     Ok(config.into())
@@ -121,7 +120,6 @@ pub(crate) fn read_config_inner(manifest_path: &Path) -> Result<Config, ErrorMes
 
 #[derive(Default)]
 struct ConfigBuilder {
-    default_target: Option<String>,
     run_command: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
     test_args: Option<Vec<String>>,
@@ -132,17 +130,17 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
-            default_target: self.default_target,
-            run_command: self.run_command.unwrap_or(vec![
-                "qemu-system-x86_64".into(),
-                "-drive".into(),
-                "format=raw,file={}".into(),
-            ]),
+            run_command: self.run_command.unwrap_or_else(|| {
+                vec![
+                    "qemu-system-x86_64".into(),
+                    "-drive".into(),
+                    "format=raw,file={}".into(),
+                ]
+            }),
             run_args: self.run_args,
             test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
             test_success_exit_code: self.test_success_exit_code,
-            non_exhaustive: (),
         }
     }
 }
