@@ -28,60 +28,56 @@ If you want to use a custom bootloader with a different name, you can use Cargo'
 Now you can build the kernel project and create a bootable disk image from it by running:
 
 ```
-bootimage build --target your_custom_target.json [other_args]
+cargo bootimage --target your_custom_target.json [other_args]
 ```
 
 The command will invoke [`cargo xbuild`](https://github.com/rust-osdev/cargo-xbuild), forwarding all passed options. Then it will build the specified bootloader together with the kernel to create a bootable disk image.
 
-If you prefer a cargo subcommand, you can use the equivalent `cargo bootimage` command:
-
-```
-cargo bootimage --target your_custom_target.json [other_args]
-```
-
 ### Running
 
-To run your kernel in QEMU, you can use `bootimage run`:
-
-```
-bootimage run --target your_custom_target.json [other_args] -- [qemu args]
-```
-
-All arguments after `--` are passed to QEMU. If you want to use a custom run command, see the _Configuration_ section below.
-
-If you prefer working directly with cargo, you can use `bootimage runner` as a custom runner in your `.cargo/config`:
+To run your kernel in QEMU, you can set a `bootimage runner` as a custom runner in a `.cargo/config` file:
 
 ```toml
 [target.'cfg(target_os = "none")']
 runner = "bootimage runner"
 ```
 
-Now you can run your kernel through `cargo xrun --target […]`.
+Then you can run your kernel through:
+
+```
+cargo xrun --target your_custom_target.json [other_args] -- [qemu args]
+```
+
+All arguments after `--` are passed to QEMU. If you want to use a custom run command, see the _Configuration_ section below.
+
+### Testing
+
+The `bootimage` has built-in support for running unit and integration tests of your kernel. For this, you need to use the `custom_tests_framework` feature of Rust as described [here](https://os.phil-opp.com/testing/#custom-test-frameworks).
 
 ## Configuration
 
 Configuration is done through a through a `[package.metadata.bootimage]` table in the `Cargo.toml` of your kernel. The following options are available:
 
 ```toml
-    [package.metadata.bootimage]
-    # The command invoked with the created bootimage (the "{}" will be replaced
-    # with the path to the bootable disk image)
-    # Applies to `bootimage run` and `bootimage runner`
-    run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
+[package.metadata.bootimage]
+# The command invoked with the created bootimage (the "{}" will be replaced
+# with the path to the bootable disk image)
+# Applies to `bootimage run` and `bootimage runner`
+run-command = ["qemu-system-x86_64", "-drive", "format=raw,file={}"]
 
-    # Additional arguments passed to the run command for non-test executables
-    # Applies to `bootimage run` and `bootimage runner`
-    run-args = []
+# Additional arguments passed to the run command for non-test executables
+# Applies to `bootimage run` and `bootimage runner`
+run-args = []
 
-    # Additional arguments passed to the run command for test executables
-    # Applies to `bootimage runner`
-    test-args = []
+# Additional arguments passed to the run command for test executables
+# Applies to `bootimage runner`
+test-args = []
 
-    # An exit code that should be considered as success for test executables
-    test-success-exit-code = {integer}
+# An exit code that should be considered as success for test executables
+test-success-exit-code = {integer}
 
-    # The timeout for running a test through `bootimage test` or `bootimage runner` (in seconds)
-    test-timeout = 300
+# The timeout for running a test through `bootimage test` or `bootimage runner` (in seconds)
+test-timeout = 300
 ```
 
 ## License
