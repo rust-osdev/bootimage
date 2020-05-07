@@ -48,7 +48,7 @@ impl Builder {
         }
 
         // try to run cargo xbuild
-        let cargo = std::env::var("CARGO").unwrap_or("cargo".to_owned());
+        let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
         let mut cmd = process::Command::new(&cargo);
         cmd.arg("xbuild");
         cmd.args(args);
@@ -172,7 +172,7 @@ impl Builder {
                 }
             }
         }
-        let bootloader_elf_path = bootloader_elf_path.ok_or(BootloaderError::BootloaderInvalid(
+        let bootloader_elf_path = bootloader_elf_path.ok_or_else(|| BootloaderError::BootloaderInvalid(
             "bootloader has no executable".into(),
         ))?;
 

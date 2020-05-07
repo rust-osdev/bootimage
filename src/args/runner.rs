@@ -52,7 +52,7 @@ impl RunnerCommand {
         }
 
         Ok(Self::Runner(RunnerArgs {
-            executable: executable.ok_or(anyhow!(
+            executable: executable.ok_or_else(|| anyhow!(
                 "excepted path to kernel executable as first argument"
             ))?,
             quiet,

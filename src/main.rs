@@ -14,7 +14,7 @@ pub fn main() -> Result<()> {
 
     let executable_name = raw_args
         .next()
-        .ok_or(anyhow!("no first argument (executable name)"))?;
+        .ok_or_else(|| anyhow!("no first argument (executable name)"))?;
     let file_stem = Path::new(&executable_name)
         .file_stem()
         .and_then(|s| s.to_str());
@@ -63,12 +63,12 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
     let exe_parent = args
         .executable
         .parent()
-        .ok_or(anyhow!("kernel executable has no parent"))?;
+        .ok_or_else(|| anyhow!("kernel executable has no parent"))?;
     let is_doctest = exe_parent
         .file_name()
-        .ok_or(anyhow!("kernel executable's parent has no file name"))?
+        .ok_or_else(|| anyhow!("kernel executable's parent has no file name"))?
         .to_str()
-        .ok_or(anyhow!(
+        .ok_or_else(|| anyhow!(
             "kernel executable's parent file name is not valid UTF-8"
         ))?
         .starts_with("rustdoctest");
@@ -77,9 +77,9 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
     let bin_name = args
         .executable
         .file_stem()
-        .ok_or(anyhow!("kernel executable has no file stem"))?
+        .ok_or_else(|| anyhow!("kernel executable has no file stem"))?
         .to_str()
-        .ok_or(anyhow!("kernel executable file stem is not valid UTF-8"))?;
+        .ok_or_else(|| anyhow!("kernel executable file stem is not valid UTF-8"))?;
 
     let output_bin_path = exe_parent.join(format!("bootimage-{}.bin", bin_name));
     let executable_canonicalized = args.executable.canonicalize().with_context(|| {
@@ -143,7 +143,7 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
                 }
                 let qemu_exit_code = exit_status
                     .code()
-                    .ok_or(anyhow!("Failed to read QEMU exit code"))?;
+                    .ok_or_else(|| anyhow!("Failed to read QEMU exit code"))?;
                 match config.test_success_exit_code {
                     Some(code) if qemu_exit_code == code => 0,
                     _ => qemu_exit_code,

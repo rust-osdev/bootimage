@@ -29,7 +29,7 @@ impl BuildConfig {
             bootloader_pkg
                 .manifest_path
                 .parent()
-                .ok_or(BootloaderError::BootloaderInvalid(
+                .ok_or_else(|| BootloaderError::BootloaderInvalid(
                     "bootloader manifest has no target directory".into(),
                 ))?;
 
@@ -47,7 +47,7 @@ impl BuildConfig {
         let target_str =
             target
                 .and_then(|v| v.as_str())
-                .ok_or(BootloaderError::BootloaderInvalid(
+                .ok_or_else(|| BootloaderError::BootloaderInvalid(
                 "No `package.metadata.bootloader.target` key found in Cargo.toml of bootloader\n\n\
                  (If you're using the official bootloader crate, you need at least version 0.5.1)"
                     .into(),
@@ -93,7 +93,7 @@ impl BuildConfig {
 
     /// Creates the cargo build command for building the bootloader.
     pub fn build_command(&self) -> Command {
-        let cargo = std::env::var("CARGO").unwrap_or("cargo".to_owned());
+        let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
         let mut cmd = Command::new(&cargo);
         cmd.arg("xbuild");
         cmd.arg("--manifest-path");

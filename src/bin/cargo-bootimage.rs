@@ -14,7 +14,7 @@ pub fn main() -> Result<()> {
 
     let executable_name = raw_args
         .next()
-        .ok_or(anyhow!("no first argument (executable name)"))?;
+        .ok_or_else(|| anyhow!("no first argument (executable name)"))?;
     let file_stem = Path::new(&executable_name)
         .file_stem()
         .and_then(|s| s.to_str());
@@ -30,8 +30,13 @@ pub fn main() -> Result<()> {
 
     match BuildCommand::parse_args(raw_args)? {
         BuildCommand::Build(args) => build(args),
-        BuildCommand::Version => Ok(help::print_version()),
-        BuildCommand::Help => Ok(help::print_cargo_bootimage_help()),
+        BuildCommand::Version => {
+            help::print_version(); Ok(())
+        },
+        BuildCommand::Help => {
+            help::print_cargo_bootimage_help();
+            Ok(())
+        },
     }
 }
 
@@ -47,12 +52,12 @@ fn build(args: BuildArgs) -> Result<()> {
     for executable in executables {
         let out_dir = executable
             .parent()
-            .ok_or(anyhow!("executable has no parent path"))?;
+            .ok_or_else(|| anyhow!("executable has no parent path"))?;
         let bin_name = &executable
             .file_stem()
-            .ok_or(anyhow!("executable has no file stem"))?
+            .ok_or_else(|| anyhow!("executable has no file stem"))?
             .to_str()
-            .ok_or(anyhow!("executable file stem not valid utf8"))?;
+            .ok_or_else(|| anyhow!("executable file stem not valid utf8"))?;
 
         let bootimage_path = out_dir.join(format!("bootimage-{}.bin", bin_name));
         builder.create_bootimage(bin_name, &executable, &bootimage_path, quiet)?;

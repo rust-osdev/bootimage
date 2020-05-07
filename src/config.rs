@@ -59,7 +59,7 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
         }
         Some(metadata) => metadata
             .as_table()
-            .ok_or(anyhow!("Bootimage configuration invalid: {:?}", metadata))?,
+            .ok_or_else(|| anyhow!("Bootimage configuration invalid: {:?}", metadata))?,
     };
 
     let mut config = ConfigBuilder::default();
@@ -128,7 +128,7 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
-            run_command: self.run_command.unwrap_or(vec![
+            run_command: self.run_command.unwrap_or_else(|| vec![
                 "qemu-system-x86_64".into(),
                 "-drive".into(),
                 "format=raw,file={}".into(),
