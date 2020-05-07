@@ -133,7 +133,7 @@ fn kernel_package<'a>(
 
     // then look for match with appended hash (e.g. for library tests)
     let contains_test = |p: &&Package| {
-        let package_name = match kernel_bin_name.rsplitn(2, "-").skip(1).next() {
+        let package_name = match kernel_bin_name.rsplitn(2, '-').nth(1) {
             Some(name) => name,
             None => return false,
         };
