@@ -31,12 +31,13 @@ pub fn main() -> Result<()> {
     match BuildCommand::parse_args(raw_args)? {
         BuildCommand::Build(args) => build(args),
         BuildCommand::Version => {
-            help::print_version(); Ok(())
-        },
+            help::print_version();
+            Ok(())
+        }
         BuildCommand::Help => {
             help::print_cargo_bootimage_help();
             Ok(())
-        },
+        }
     }
 }
 

@@ -105,12 +105,14 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
                 }
                 config.test_args = Some(args);
             }
-            (key, value) => return Err(anyhow!(
-                "unexpected `package.metadata.bootimage` \
+            (key, value) => {
+                return Err(anyhow!(
+                    "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
-                key,
-                value
-            )),
+                    key,
+                    value
+                ))
+            }
         }
     }
     Ok(config.into())
@@ -128,11 +130,13 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
-            run_command: self.run_command.unwrap_or_else(|| vec![
-                "qemu-system-x86_64".into(),
-                "-drive".into(),
-                "format=raw,file={}".into(),
-            ]),
+            run_command: self.run_command.unwrap_or_else(|| {
+                vec![
+                    "qemu-system-x86_64".into(),
+                    "-drive".into(),
+                    "format=raw,file={}".into(),
+                ]
+            }),
             run_args: self.run_args,
             test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),

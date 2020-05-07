@@ -68,9 +68,7 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         .file_name()
         .ok_or_else(|| anyhow!("kernel executable's parent has no file name"))?
         .to_str()
-        .ok_or_else(|| anyhow!(
-            "kernel executable's parent file name is not valid UTF-8"
-        ))?
+        .ok_or_else(|| anyhow!("kernel executable's parent file name is not valid UTF-8"))?
         .starts_with("rustdoctest");
     let is_test = is_doctest || exe_parent.ends_with("deps");
 

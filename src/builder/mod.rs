@@ -168,13 +168,14 @@ impl Builder {
                 {
                     return Err(BootloaderError::BootloaderInvalid(
                         "bootloader has multiple executables".into(),
-                    ).into());
+                    )
+                    .into());
                 }
             }
         }
-        let bootloader_elf_path = bootloader_elf_path.ok_or_else(|| BootloaderError::BootloaderInvalid(
-            "bootloader has no executable".into(),
-        ))?;
+        let bootloader_elf_path = bootloader_elf_path.ok_or_else(|| {
+            BootloaderError::BootloaderInvalid("bootloader has no executable".into())
+        })?;
 
         disk_image::create_disk_image(&bootloader_elf_path, output_bin_path)?;
 

@@ -25,13 +25,9 @@ impl BuildConfig {
     ) -> Result<Self, BootloaderError> {
         let kernel_pkg = kernel_package(project_metadata, kernel_bin_name)?;
         let bootloader_pkg = bootloader_package(project_metadata, kernel_pkg)?;
-        let bootloader_root =
-            bootloader_pkg
-                .manifest_path
-                .parent()
-                .ok_or_else(|| BootloaderError::BootloaderInvalid(
-                    "bootloader manifest has no target directory".into(),
-                ))?;
+        let bootloader_root = bootloader_pkg.manifest_path.parent().ok_or_else(|| {
+            BootloaderError::BootloaderInvalid("bootloader manifest has no target directory".into())
+        })?;
 
         let cargo_toml_content = fs::read_to_string(&bootloader_pkg.manifest_path)
             .map_err(|err| format!("bootloader has no valid Cargo.toml: {}", err))
@@ -44,14 +40,13 @@ impl BuildConfig {
         let target = metadata
             .and_then(|t| t.get("bootloader"))
             .and_then(|t| t.get("target"));
-        let target_str =
-            target
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| BootloaderError::BootloaderInvalid(
+        let target_str = target.and_then(|v| v.as_str()).ok_or_else(|| {
+            BootloaderError::BootloaderInvalid(
                 "No `package.metadata.bootloader.target` key found in Cargo.toml of bootloader\n\n\
                  (If you're using the official bootloader crate, you need at least version 0.5.1)"
                     .into(),
-            ))?;
+            )
+        })?;
 
         let binary_feature = cargo_toml
             .get("features")
