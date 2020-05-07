@@ -115,13 +115,35 @@ fn kernel_package<'a>(
     project_metadata: &'a Metadata,
     kernel_bin_name: &str,
 ) -> Result<&'a Package, BootloaderError> {
+    // look for exact match with binary name first
     let contains_bin = |p: &&Package| {
         p.targets
             .iter()
             .any(|t| t.name == kernel_bin_name && t.kind.iter().any(|k| k == "bin"))
     };
-    let bin_metadata_opt = project_metadata.packages.iter().find(contains_bin);
-    bin_metadata_opt.ok_or_else(|| BootloaderError::KernelBinPackageNotFound {
+    let package = project_metadata.packages.iter().find(contains_bin);
+
+    // then look for exact match with integration test binary
+    let contains_test_bin = |p: &&Package| {
+        p.targets
+            .iter()
+            .any(|t| t.name == kernel_bin_name && t.kind.iter().any(|k| k == "test"))
+    };
+    let package = package.or_else(|| project_metadata.packages.iter().find(contains_test_bin));
+
+    // then look for match with appended hash (e.g. for library tests)
+    let contains_test = |p: &&Package| {
+        let package_name = match kernel_bin_name.rsplitn(2, "-").skip(1).next() {
+            Some(name) => name,
+            None => return false,
+        };
+        p.targets
+            .iter()
+            .any(|t| t.name.replace("-", "_") == package_name)
+    };
+    let package = package.or_else(|| project_metadata.packages.iter().find(contains_test));
+
+    package.ok_or_else(|| BootloaderError::KernelBinPackageNotFound {
         bin_name: kernel_bin_name.to_owned(),
     })
 }
