@@ -38,12 +38,6 @@ jobs:
     - name: Set Rustup profile to minimal
       run: rustup set profile minimal
 
-    - name: Install musl target on Linux
-      run: |
-        rustup target add x86_64-unknown-linux-musl
-        sudo apt-get install musl-tools musl-dev
-      if: runner.os == 'Linux'
-
     - name: "Print Rust Version"
       run: |
         rustc -Vv
