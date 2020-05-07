@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use bootimage::{
     args::{BuildArgs, BuildCommand},
     builder::Builder,
@@ -60,8 +60,23 @@ fn build(args: BuildArgs) -> Result<()> {
             .to_str()
             .ok_or_else(|| anyhow!("executable file stem not valid utf8"))?;
 
+        // We don't have access to a CARGO_MANIFEST_DIR environment variable
+        // here because `cargo bootimage` is started directly by the user. We
+        // therefore have to find out the path to the Cargo.toml of the
+        // executables ourselves. For workspace projects, this can be a
+        // different Cargo.toml than the Cargo.toml in the current directory.
+        //
+        // To retrieve the correct Cargo.toml path, we look for the binary name
+        // in the `cargo metadata` output and then get the manifest path from
+        // the corresponding package.
+        let kernel_package = builder
+            .kernel_package_for_bin(bin_name)
+            .context("Failed to run cargo metadata to find out kernel manifest path")?
+            .ok_or_else(|| anyhow!("Failed to find kernel binary in cargo metadata output"))?;
+        let kernel_manifest_path = &kernel_package.manifest_path.to_owned();
+
         let bootimage_path = out_dir.join(format!("bootimage-{}.bin", bin_name));
-        builder.create_bootimage(bin_name, &executable, &bootimage_path, quiet)?;
+        builder.create_bootimage(kernel_manifest_path, &executable, &bootimage_path, quiet)?;
         if !args.quiet() {
             println!(
                 "Created bootimage for `{}` at `{}`",
