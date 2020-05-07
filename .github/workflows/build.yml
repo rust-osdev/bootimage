@@ -61,7 +61,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ${{ env.name }}-bootimage
-        path: ~/.cargo/bin/bootimage
+        path: ~/.cargo/bin/
 
   test:
     name: "Test"
@@ -86,7 +86,10 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: ${{ env.name }}-bootimage
-        path: ~/.cargo/bin/bootimage
+        path: bin/
+
+    - name: "Add `bin` to PATH"
+      run: echo ::add-path::bin
 
     - name: Install Rustup (macOS)
       run: |
