@@ -166,9 +166,9 @@ impl Builder {
                     .replace(PathBuf::from(executable))
                     .is_some()
                 {
-                    Err(BootloaderError::BootloaderInvalid(
+                    return Err(BootloaderError::BootloaderInvalid(
                         "bootloader has multiple executables".into(),
-                    ))?;
+                    ).into());
                 }
             }
         }

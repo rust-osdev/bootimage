@@ -104,10 +104,8 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         if let Some(args) = config.test_args {
             run_command.extend(args);
         }
-    } else {
-        if let Some(args) = config.run_args {
-            run_command.extend(args);
-        }
+    } else if let Some(args) = config.run_args {
+        run_command.extend(args);
     }
     if let Some(args) = args.runner_args {
         run_command.extend(args);

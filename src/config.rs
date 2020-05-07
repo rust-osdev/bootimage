@@ -67,7 +67,7 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
     for (key, value) in metadata {
         match (key.as_str(), value.clone()) {
             ("test-timeout", Value::Integer(timeout)) if timeout.is_negative() => {
-                Err(anyhow!("test-timeout must not be negative"))?
+                return Err(anyhow!("test-timeout must not be negative"))
             }
             ("test-timeout", Value::Integer(timeout)) => {
                 config.test_timeout = Some(timeout as u32);
@@ -80,7 +80,7 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
                 for value in array {
                     match value {
                         Value::String(s) => command.push(s),
-                        _ => Err(anyhow!("run-command must be a list of strings"))?,
+                        _ => return Err(anyhow!("run-command must be a list of strings")),
                     }
                 }
                 config.run_command = Some(command);
@@ -90,7 +90,7 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
                 for value in array {
                     match value {
                         Value::String(s) => args.push(s),
-                        _ => Err(anyhow!("run-args must be a list of strings"))?,
+                        _ => return Err(anyhow!("run-args must be a list of strings")),
                     }
                 }
                 config.run_args = Some(args);
@@ -100,17 +100,17 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
                 for value in array {
                     match value {
                         Value::String(s) => args.push(s),
-                        _ => Err(anyhow!("test-args must be a list of strings"))?,
+                        _ => return Err(anyhow!("test-args must be a list of strings")),
                     }
                 }
                 config.test_args = Some(args);
             }
-            (key, value) => Err(anyhow!(
+            (key, value) => return Err(anyhow!(
                 "unexpected `package.metadata.bootimage` \
                  key `{}` with value `{}`",
                 key,
                 value
-            ))?,
+            )),
         }
     }
     Ok(config.into())

@@ -21,12 +21,12 @@ impl RunnerCommand {
         let mut quiet = false;
         let mut runner_args = None;
 
-        let mut arg_iter = args.into_iter().fuse();
+        let mut arg_iter = args.fuse();
 
         loop {
             if executable.is_some() {
                 let args: Vec<_> = arg_iter.collect();
-                if args.len() > 0 {
+                if !args.is_empty() {
                     runner_args = Some(args);
                 }
                 break;

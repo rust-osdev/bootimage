@@ -32,7 +32,7 @@ impl BuildCommand {
                 Ok(())
             };
 
-            let mut arg_iter = args.into_iter();
+            let mut arg_iter = args;
             while let Some(arg) = arg_iter.next() {
                 match arg.as_ref() {
                     "--help" | "-h" => {

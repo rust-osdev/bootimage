@@ -40,7 +40,7 @@ fn build(args: BuildArgs) -> Result<()> {
     let quiet = args.quiet();
 
     let executables = builder.build_kernel(&args.cargo_args(), quiet)?;
-    if executables.len() == 0 {
+    if executables.is_empty() {
         return Err(anyhow!("no executables built"));
     }
 
