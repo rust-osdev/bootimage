@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::{
     mem,
     path::{Path, PathBuf},
@@ -48,11 +48,10 @@ impl BuildCommand {
                         let next = arg_iter.next();
                         set(
                             &mut manifest_path,
-                            next.as_ref().map(|p| {
-                                Path::new(&p)
-                                    .canonicalize()
-                                    .expect("--manifest-path invalid")
-                            }),
+                            next.as_ref()
+                                .map(|p| Path::new(&p).canonicalize())
+                                .transpose()
+                                .context("--manifest-path invalid")?,
                         )?;
                         cargo_args.push(arg);
                         if let Some(next) = next {
@@ -62,7 +61,7 @@ impl BuildCommand {
                     _ if arg.starts_with("--manifest-path=") => {
                         let path = Path::new(arg.trim_start_matches("--manifest-path="))
                             .canonicalize()
-                            .expect("--manifest-path invalid");
+                            .context("--manifest-path invalid")?;
                         set(&mut manifest_path, Some(path))?;
                         cargo_args.push(arg);
                     }
