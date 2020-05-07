@@ -85,8 +85,17 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
             args.executable.display(),
         )
     })?;
+
+    // Cargo sets a CARGO_MANIFEST_DIR environment variable for all runner
+    // executables. This variable contains the path to the Cargo.toml of the
+    // crate that the executable belongs to (i.e. not the project root
+    // manifest for workspace projects)
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR")
+        .context("Failed to read CARGO_MANIFEST_DIR environment variable")?;
+    let kernel_manifest_path = Path::new(&manifest_dir).join("Cargo.toml");
+
     builder.create_bootimage(
-        bin_name,
+        &kernel_manifest_path,
         &executable_canonicalized,
         &output_bin_path,
         args.quiet,
