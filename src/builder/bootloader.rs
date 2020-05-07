@@ -20,10 +20,15 @@ impl BuildConfig {
     /// Derives the bootloader build config from the project's metadata.
     pub fn from_metadata(
         project_metadata: &Metadata,
-        kernel_bin_name: &str,
+        kernel_manifest_path: &Path,
         kernel_bin_path: &Path,
     ) -> Result<Self, BootloaderError> {
-        let kernel_pkg = kernel_package(project_metadata, kernel_bin_name)?;
+        let kernel_pkg = project_metadata
+            .packages
+            .iter()
+            .find(|p| p.manifest_path == kernel_manifest_path)
+            .unwrap();
+
         let bootloader_pkg = bootloader_package(project_metadata, kernel_pkg)?;
         let bootloader_root = bootloader_pkg.manifest_path.parent().ok_or_else(|| {
             BootloaderError::BootloaderInvalid("bootloader manifest has no target directory".into())
@@ -108,44 +113,6 @@ impl BuildConfig {
         ); // for cargo-xbuild
         cmd
     }
-}
-
-/// Returns the package metadata for the kernel crate
-fn kernel_package<'a>(
-    project_metadata: &'a Metadata,
-    kernel_bin_name: &str,
-) -> Result<&'a Package, BootloaderError> {
-    // look for exact match with binary name first
-    let contains_bin = |p: &&Package| {
-        p.targets
-            .iter()
-            .any(|t| t.name == kernel_bin_name && t.kind.iter().any(|k| k == "bin"))
-    };
-    let package = project_metadata.packages.iter().find(contains_bin);
-
-    // then look for exact match with integration test binary
-    let contains_test_bin = |p: &&Package| {
-        p.targets
-            .iter()
-            .any(|t| t.name == kernel_bin_name && t.kind.iter().any(|k| k == "test"))
-    };
-    let package = package.or_else(|| project_metadata.packages.iter().find(contains_test_bin));
-
-    // then look for match with appended hash (e.g. for library tests)
-    let contains_test = |p: &&Package| {
-        let package_name = match kernel_bin_name.rsplitn(2, '-').nth(1) {
-            Some(name) => name,
-            None => return false,
-        };
-        p.targets
-            .iter()
-            .any(|t| t.name.replace("-", "_") == package_name)
-    };
-    let package = package.or_else(|| project_metadata.packages.iter().find(contains_test));
-
-    package.ok_or_else(|| BootloaderError::KernelBinPackageNotFound {
-        bin_name: kernel_bin_name.to_owned(),
-    })
 }
 
 /// Returns the package metadata for the bootloader crate

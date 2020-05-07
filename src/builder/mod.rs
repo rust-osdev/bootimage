@@ -117,7 +117,7 @@ impl Builder {
     /// If the quiet argument is set to true, all output to stdout is suppressed.
     pub fn create_bootimage(
         &mut self,
-        bin_name: &str,
+        kernel_manifest_path: &Path,
         bin_path: &Path,
         output_bin_path: &Path,
         quiet: bool,
@@ -185,6 +185,18 @@ impl Builder {
         disk_image::create_disk_image(&bootloader_elf_path, output_bin_path)?;
 
         Ok(())
+    }
+
+    /// Returns the cargo metadata package that contains the given binary.
+    pub fn kernel_package_for_bin(
+        &mut self,
+        kernel_bin_name: &str,
+    ) -> Result<Option<&cargo_metadata::Package>, cargo_metadata::Error> {
+        Ok(self.project_metadata()?.packages.iter().find(|p| {
+            p.targets
+                .iter()
+                .any(|t| t.name == kernel_bin_name && t.kind.iter().any(|k| k == "bin"))
+        }))
     }
 
     fn project_metadata(&mut self) -> Result<&Metadata, cargo_metadata::Error> {
