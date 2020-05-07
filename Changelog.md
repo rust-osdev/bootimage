@@ -1,3 +1,5 @@
+- **Breaking:**  Rewrite: Remove support for `bootimage {run, test}` ([#55](https://github.com/rust-osdev/bootimage/pull/55))
+
 # 0.7.10
 
 - Add support for doctests ([#52](https://github.com/rust-osdev/bootimage/pull/52))
