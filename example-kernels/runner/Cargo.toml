@@ -5,8 +5,8 @@ authors = ["Philipp Oppermann <dev@phil-opp.com>"]
 edition = "2018"
 
 [dependencies]
-bootloader = "0.9.2"
-x86_64 = "0.10.2"
+bootloader = "0.9.3"
+x86_64 = "0.11.0"
 
 [package.metadata.bootimage]
 run-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-display", "none"]
