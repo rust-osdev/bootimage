@@ -14,6 +14,7 @@ pub struct BuildConfig {
     target_dir: PathBuf,
     kernel_bin_path: PathBuf,
     kernel_manifest_path: PathBuf,
+    build_std: Option<String>,
 }
 
 impl BuildConfig {
@@ -54,6 +55,26 @@ impl BuildConfig {
                     .into(),
             )
         })?;
+        let build_std = {
+            let key = metadata
+                .and_then(|t| t.get("bootloader"))
+                .and_then(|t| t.get("build-std"));
+            if let Some(key) = key {
+                Some(
+                    key.as_str()
+                        .ok_or_else(|| {
+                            BootloaderError::BootloaderInvalid(
+                        "A non-string `package.metadata.bootloader.build-std` key found in \
+                    Cargo.toml of bootloader"
+                            .into(),
+                    )
+                        })?
+                        .into(),
+                )
+            } else {
+                None
+            }
+        };
 
         let binary_feature = cargo_toml
             .get("features")
@@ -90,6 +111,7 @@ impl BuildConfig {
             target_dir,
             kernel_manifest_path: kernel_pkg.manifest_path.clone(),
             kernel_bin_path: kernel_bin_path.to_owned(),
+            build_std,
         })
     }
 
@@ -97,7 +119,11 @@ impl BuildConfig {
     pub fn build_command(&self) -> Command {
         let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
         let mut cmd = Command::new(&cargo);
-        cmd.arg("xbuild");
+        if let Some(build_std) = &self.build_std {
+            cmd.arg("build").arg(&format!("-Zbuild-std={}", build_std));
+        } else {
+            cmd.arg("xbuild");
+        }
         cmd.arg("--manifest-path");
         cmd.arg(&self.manifest_path);
         cmd.arg("--bin").arg(&self.bootloader_name);
