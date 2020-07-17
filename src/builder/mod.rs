@@ -44,7 +44,7 @@ impl Builder {
     ///
     /// If the quiet argument is set to true, all output to stdout is suppressed.
     pub fn build_kernel(
-        &self,
+        &mut self,
         args: &[String],
         quiet: bool,
     ) -> Result<Vec<PathBuf>, BuildKernelError> {
@@ -52,10 +52,21 @@ impl Builder {
             println!("Building kernel");
         }
 
+        let build_arg = if self
+            .project_metadata()
+            .ok()
+            .and_then(|m| m.packages.iter().find(|p| p.name == "rlibc"))
+            .is_some()
+        {
+            "build"
+        } else {
+            "xbuild"
+        };
+
         // try to run cargo xbuild
         let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
         let mut cmd = process::Command::new(&cargo);
-        cmd.arg("xbuild");
+        cmd.arg(build_arg);
         cmd.args(args);
         if !quiet {
             cmd.stdout(process::Stdio::inherit());
@@ -66,14 +77,16 @@ impl Builder {
             error: err,
         })?;
         if !output.status.success() {
-            // try executing `cargo xbuild --help` to check whether cargo-xbuild is installed
-            let mut help_command = process::Command::new("cargo");
-            help_command.arg("xbuild").arg("--help");
-            help_command.stdout(process::Stdio::null());
-            help_command.stderr(process::Stdio::null());
-            if let Ok(help_exit_status) = help_command.status() {
-                if !help_exit_status.success() {
-                    return Err(BuildKernelError::XbuildNotFound);
+            if build_arg == "xbuild" {
+                // try executing `cargo xbuild --help` to check whether cargo-xbuild is installed
+                let mut help_command = process::Command::new("cargo");
+                help_command.arg("xbuild").arg("--help");
+                help_command.stdout(process::Stdio::null());
+                help_command.stderr(process::Stdio::null());
+                if let Ok(help_exit_status) = help_command.status() {
+                    if !help_exit_status.success() {
+                        return Err(BuildKernelError::XbuildNotFound);
+                    }
                 }
             }
             return Err(BuildKernelError::XbuildFailed {
@@ -83,7 +96,7 @@ impl Builder {
 
         // Retrieve binary paths
         let mut cmd = process::Command::new(cargo);
-        cmd.arg("xbuild");
+        cmd.arg(build_arg);
         cmd.args(args);
         cmd.arg("--message-format").arg("json");
         let output = cmd.output().map_err(|err| BuildKernelError::Io {
