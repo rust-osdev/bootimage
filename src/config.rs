@@ -12,9 +12,9 @@ use toml::Value;
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct Config {
-    /// The command that is used for building the kernel for `cargo bootimage`.
+    /// The cargo subcommand that is used for building the kernel for `cargo bootimage`.
     ///
-    /// Defaults to `cargo build`.
+    /// Defaults to `build`.
     pub build_command: Vec<String>,
     /// The run command that is invoked on `bootimage run` or `bootimage runner`
     ///
@@ -128,9 +128,7 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
-            build_command: self
-                .build_command
-                .unwrap_or(vec!["cargo".into(), "build".into()]),
+            build_command: self.build_command.unwrap_or(vec!["build".into()]),
             run_command: self.run_command.unwrap_or_else(|| {
                 vec![
                     "qemu-system-x86_64".into(),

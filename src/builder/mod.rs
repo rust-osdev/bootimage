@@ -1,5 +1,6 @@
 //! Provides functions to build the kernel and the bootloader.
 
+use crate::config::Config;
 use cargo_metadata::Metadata;
 use error::{BootloaderError, BuildKernelError, BuilderError, CreateBootimageError};
 use std::{
@@ -46,27 +47,17 @@ impl Builder {
     pub fn build_kernel(
         &mut self,
         args: &[String],
+        config: &Config,
         quiet: bool,
     ) -> Result<Vec<PathBuf>, BuildKernelError> {
         if !quiet {
             println!("Building kernel");
         }
 
-        let build_arg = if self
-            .project_metadata()
-            .ok()
-            .and_then(|m| m.packages.iter().find(|p| p.name == "rlibc"))
-            .is_some()
-        {
-            "build"
-        } else {
-            "xbuild"
-        };
-
         // try to run cargo xbuild
         let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
         let mut cmd = process::Command::new(&cargo);
-        cmd.arg(build_arg);
+        cmd.args(&config.build_command);
         cmd.args(args);
         if !quiet {
             cmd.stdout(process::Stdio::inherit());
@@ -77,7 +68,7 @@ impl Builder {
             error: err,
         })?;
         if !output.status.success() {
-            if build_arg == "xbuild" {
+            if config.build_command.starts_with(&["xbuild".into()]) {
                 // try executing `cargo xbuild --help` to check whether cargo-xbuild is installed
                 let mut help_command = process::Command::new("cargo");
                 help_command.arg("xbuild").arg("--help");
@@ -96,7 +87,7 @@ impl Builder {
 
         // Retrieve binary paths
         let mut cmd = process::Command::new(cargo);
-        cmd.arg(build_arg);
+        cmd.args(&config.build_command);
         cmd.args(args);
         cmd.arg("--message-format").arg("json");
         let output = cmd.output().map_err(|err| BuildKernelError::Io {
