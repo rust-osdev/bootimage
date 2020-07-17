@@ -1,4 +1,0 @@
-status = [
-  "rust-osdev.bootimage",
-]
-delete_merged_branches = true
