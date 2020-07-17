@@ -128,7 +128,7 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
-            build_command: self.build_command.unwrap_or(vec!["build".into()]),
+            build_command: self.build_command.unwrap_or_else(|| vec!["build".into()]),
             run_command: self.run_command.unwrap_or_else(|| {
                 vec![
                     "qemu-system-x86_64".into(),
