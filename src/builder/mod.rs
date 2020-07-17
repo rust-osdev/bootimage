@@ -38,7 +38,7 @@ impl Builder {
         &self.manifest_path
     }
 
-    /// Builds the kernel by executing `cargo xbuild` with the given arguments.
+    /// Builds the kernel by executing `cargo build` with the given arguments.
     ///
     /// Returns a list of paths to all built executables. For crates with only a single binary,
     /// the returned list contains only a single element.
@@ -54,7 +54,7 @@ impl Builder {
             println!("Building kernel");
         }
 
-        // try to run cargo xbuild
+        // try to build kernel
         let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
         let mut cmd = process::Command::new(&cargo);
         cmd.args(&config.build_command);
@@ -80,7 +80,7 @@ impl Builder {
                     }
                 }
             }
-            return Err(BuildKernelError::XbuildFailed {
+            return Err(BuildKernelError::BuildFailed {
                 stderr: output.stderr,
             });
         }
@@ -95,17 +95,17 @@ impl Builder {
             error: err,
         })?;
         if !output.status.success() {
-            return Err(BuildKernelError::XbuildFailed {
+            return Err(BuildKernelError::BuildFailed {
                 stderr: output.stderr,
             });
         }
         let mut executables = Vec::new();
         for line in String::from_utf8(output.stdout)
-            .map_err(BuildKernelError::XbuildJsonOutputInvalidUtf8)?
+            .map_err(BuildKernelError::BuildJsonOutputInvalidUtf8)?
             .lines()
         {
             let mut artifact =
-                json::parse(line).map_err(BuildKernelError::XbuildJsonOutputInvalidJson)?;
+                json::parse(line).map_err(BuildKernelError::BuildJsonOutputInvalidJson)?;
             if let Some(executable) = artifact["executable"].take_string() {
                 executables.push(PathBuf::from(executable));
             }
@@ -165,11 +165,11 @@ impl Builder {
         }
         let mut bootloader_elf_path = None;
         for line in String::from_utf8(output.stdout)
-            .map_err(CreateBootimageError::XbuildJsonOutputInvalidUtf8)?
+            .map_err(CreateBootimageError::BuildJsonOutputInvalidUtf8)?
             .lines()
         {
             let mut artifact =
-                json::parse(line).map_err(CreateBootimageError::XbuildJsonOutputInvalidJson)?;
+                json::parse(line).map_err(CreateBootimageError::BuildJsonOutputInvalidJson)?;
             if let Some(executable) = artifact["executable"].take_string() {
                 if bootloader_elf_path
                     .replace(PathBuf::from(executable))
