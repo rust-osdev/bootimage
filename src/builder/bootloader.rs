@@ -60,17 +60,10 @@ impl BuildConfig {
                 .and_then(|t| t.get("bootloader"))
                 .and_then(|t| t.get("build-std"));
             if let Some(key) = key {
-                Some(
-                    key.as_str()
-                        .ok_or_else(|| {
-                            BootloaderError::BootloaderInvalid(
-                        "A non-string `package.metadata.bootloader.build-std` key found in \
-                    Cargo.toml of bootloader"
-                            .into(),
-                    )
-                        })?
-                        .into(),
-                )
+                let err_msg = "A non-string `package.metadata.bootloader.build-std` key found in \
+                Cargo.toml of bootloader";
+                let err = || BootloaderError::BootloaderInvalid(err_msg.into());
+                Some(key.as_str().ok_or_else(err)?.into())
             } else {
                 None
             }
