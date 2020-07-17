@@ -5,6 +5,8 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+extern crate rlibc;
+
 pub fn test_runner(tests: &[&dyn Fn()]) {
     for test in tests.iter() {
         test();

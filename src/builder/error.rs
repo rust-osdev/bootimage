@@ -29,19 +29,19 @@ pub enum BuildKernelError {
     )]
     XbuildNotFound,
 
-    /// Running `cargo xbuild` failed.
+    /// Running `cargo build` failed.
     #[error("Kernel build failed.\nStderr: {}", String::from_utf8_lossy(.stderr))]
-    XbuildFailed {
+    BuildFailed {
         /// The standard error output.
         stderr: Vec<u8>,
     },
 
-    /// The output of `cargo xbuild --message-format=json` was not valid UTF-8
+    /// The output of `cargo build --message-format=json` was not valid UTF-8
     #[error("Output of kernel build with --message-format=json is not valid UTF-8:\n{0}")]
-    XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
-    /// The output of `cargo xbuild --message-format=json` was not valid JSON
+    BuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
+    /// The output of `cargo build --message-format=json` was not valid JSON
     #[error("Output of kernel build with --message-format=json is not valid JSON:\n{0}")]
-    XbuildJsonOutputInvalidJson(json::Error),
+    BuildJsonOutputInvalidJson(json::Error),
 }
 
 /// Represents an error that occurred when creating a bootimage.
@@ -59,7 +59,7 @@ pub enum CreateBootimageError {
     /// Building the bootloader failed
     #[error("Bootloader build failed.\nStderr: {}", String::from_utf8_lossy(.stderr))]
     BootloaderBuildFailed {
-        /// The `cargo xbuild` output to standard error
+        /// The `cargo build` output to standard error
         stderr: Vec<u8>,
     },
 
@@ -76,12 +76,12 @@ pub enum CreateBootimageError {
         error: io::Error,
     },
 
-    /// The output of `cargo xbuild --message-format=json` was not valid UTF-8
+    /// The output of `cargo build --message-format=json` was not valid UTF-8
     #[error("Output of bootloader build with --message-format=json is not valid UTF-8:\n{0}")]
-    XbuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
-    /// The output of `cargo xbuild --message-format=json` was not valid JSON
+    BuildJsonOutputInvalidUtf8(std::string::FromUtf8Error),
+    /// The output of `cargo build --message-format=json` was not valid JSON
     #[error("Output of bootloader build with --message-format=json is not valid JSON:\n{0}")]
-    XbuildJsonOutputInvalidJson(json::Error),
+    BuildJsonOutputInvalidJson(json::Error),
 }
 
 /// There is something wrong with the bootloader dependency.

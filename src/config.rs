@@ -12,6 +12,10 @@ use toml::Value;
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct Config {
+    /// The cargo subcommand that is used for building the kernel for `cargo bootimage`.
+    ///
+    /// Defaults to `build`.
+    pub build_command: Vec<String>,
     /// The run command that is invoked on `bootimage run` or `bootimage runner`
     ///
     /// The substring "{}" will be replaced with the path to the bootable disk image.
@@ -75,35 +79,17 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
             ("test-success-exit-code", Value::Integer(exit_code)) => {
                 config.test_success_exit_code = Some(exit_code as i32);
             }
+            ("build-command", Value::Array(array)) => {
+                config.build_command = Some(parse_string_array(array, "build-command")?);
+            }
             ("run-command", Value::Array(array)) => {
-                let mut command = Vec::new();
-                for value in array {
-                    match value {
-                        Value::String(s) => command.push(s),
-                        _ => return Err(anyhow!("run-command must be a list of strings")),
-                    }
-                }
-                config.run_command = Some(command);
+                config.run_command = Some(parse_string_array(array, "run-command")?);
             }
             ("run-args", Value::Array(array)) => {
-                let mut args = Vec::new();
-                for value in array {
-                    match value {
-                        Value::String(s) => args.push(s),
-                        _ => return Err(anyhow!("run-args must be a list of strings")),
-                    }
-                }
-                config.run_args = Some(args);
+                config.run_args = Some(parse_string_array(array, "run-args")?);
             }
             ("test-args", Value::Array(array)) => {
-                let mut args = Vec::new();
-                for value in array {
-                    match value {
-                        Value::String(s) => args.push(s),
-                        _ => return Err(anyhow!("test-args must be a list of strings")),
-                    }
-                }
-                config.test_args = Some(args);
+                config.test_args = Some(parse_string_array(array, "test-args")?);
             }
             (key, value) => {
                 return Err(anyhow!(
@@ -118,8 +104,20 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
     Ok(config.into())
 }
 
+fn parse_string_array(array: Vec<Value>, prop_name: &str) -> Result<Vec<String>> {
+    let mut parsed = Vec::new();
+    for value in array {
+        match value {
+            Value::String(s) => parsed.push(s),
+            _ => return Err(anyhow!("{} must be a list of strings", prop_name)),
+        }
+    }
+    Ok(parsed)
+}
+
 #[derive(Default)]
 struct ConfigBuilder {
+    build_command: Option<Vec<String>>,
     run_command: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
     test_args: Option<Vec<String>>,
@@ -130,6 +128,7 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
+            build_command: self.build_command.unwrap_or_else(|| vec!["build".into()]),
             run_command: self.run_command.unwrap_or_else(|| {
                 vec![
                     "qemu-system-x86_64".into(),

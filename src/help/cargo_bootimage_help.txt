@@ -11,3 +11,13 @@ BUILD_OPTS:
     is downloaded and built, and then combined with the kernel into a bootable
     disk image.
 
+CONFIGURATION:
+    The behavior of `cargo bootimage` can be configured through a
+    `[package.metadata.bootimage]` table in the `Cargo.toml`. The
+    following options are available to configure the build behavior:
+
+    [package.metadata.bootimage]
+    # The cargo subcommand that will be used for building the kernel.
+    #
+    # For building using the `cargo-xbuild` crate, set this to `xbuild`.
+    build-command = ["build"]

@@ -4,7 +4,7 @@
 name = "basic"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -20,14 +20,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "bootloader"
-version = "0.9.3"
+version = "0.9.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "rlibc 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "rlibc"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "runner"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -35,7 +43,7 @@ dependencies = [
 name = "runner-doctest"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -43,7 +51,7 @@ dependencies = [
 name = "runner-test"
 version = "0.1.0"
 dependencies = [
- "bootloader 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -59,5 +67,6 @@ dependencies = [
 [metadata]
 "checksum bit_field 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ed8765909f9009617974ab6b7d332625b320b33c326b1e9321382ef1999b5d56"
 "checksum bitflags 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3d155346769a6855b86399e9bc3814ab343cd3d62c7e985113d46a0ec3c281fd"
-"checksum bootloader 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)" = "44ac0bdf4930c3c4d7f0d04eb6f15d7dcb9d5972b1ff9cd2bee0128112260fc7"
+"checksum bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)" = "1e54086033cef68ed4b1729aeb1383a4d2e7d9bacd70db747a0a0bc0a420c831"
+"checksum rlibc 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc874b127765f014d792f16763a81245ab80500e2ad921ed4ee9e82481ee08fe"
 "checksum x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "365de37eb7c6da582cbb510dd0f3f1235d24ff6309a8a96e8a9909cc9bfd608f"

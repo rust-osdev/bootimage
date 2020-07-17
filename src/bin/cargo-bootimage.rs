@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use bootimage::{
     args::{BuildArgs, BuildCommand},
     builder::Builder,
-    help,
+    config, help,
 };
 use std::{
     env,
@@ -43,9 +43,10 @@ pub fn main() -> Result<()> {
 
 fn build(args: BuildArgs) -> Result<()> {
     let mut builder = Builder::new(args.manifest_path().map(PathBuf::from))?;
+    let config = config::read_config(builder.manifest_path())?;
     let quiet = args.quiet();
 
-    let executables = builder.build_kernel(&args.cargo_args(), quiet)?;
+    let executables = builder.build_kernel(&args.cargo_args(), &config, quiet)?;
     if executables.is_empty() {
         return Err(anyhow!("no executables built"));
     }

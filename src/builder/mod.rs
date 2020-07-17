@@ -1,5 +1,6 @@
 //! Provides functions to build the kernel and the bootloader.
 
+use crate::config::Config;
 use cargo_metadata::Metadata;
 use error::{BootloaderError, BuildKernelError, BuilderError, CreateBootimageError};
 use std::{
@@ -37,25 +38,26 @@ impl Builder {
         &self.manifest_path
     }
 
-    /// Builds the kernel by executing `cargo xbuild` with the given arguments.
+    /// Builds the kernel by executing `cargo build` with the given arguments.
     ///
     /// Returns a list of paths to all built executables. For crates with only a single binary,
     /// the returned list contains only a single element.
     ///
     /// If the quiet argument is set to true, all output to stdout is suppressed.
     pub fn build_kernel(
-        &self,
+        &mut self,
         args: &[String],
+        config: &Config,
         quiet: bool,
     ) -> Result<Vec<PathBuf>, BuildKernelError> {
         if !quiet {
             println!("Building kernel");
         }
 
-        // try to run cargo xbuild
+        // try to build kernel
         let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
         let mut cmd = process::Command::new(&cargo);
-        cmd.arg("xbuild");
+        cmd.args(&config.build_command);
         cmd.args(args);
         if !quiet {
             cmd.stdout(process::Stdio::inherit());
@@ -66,24 +68,26 @@ impl Builder {
             error: err,
         })?;
         if !output.status.success() {
-            // try executing `cargo xbuild --help` to check whether cargo-xbuild is installed
-            let mut help_command = process::Command::new("cargo");
-            help_command.arg("xbuild").arg("--help");
-            help_command.stdout(process::Stdio::null());
-            help_command.stderr(process::Stdio::null());
-            if let Ok(help_exit_status) = help_command.status() {
-                if !help_exit_status.success() {
-                    return Err(BuildKernelError::XbuildNotFound);
+            if config.build_command.starts_with(&["xbuild".into()]) {
+                // try executing `cargo xbuild --help` to check whether cargo-xbuild is installed
+                let mut help_command = process::Command::new("cargo");
+                help_command.arg("xbuild").arg("--help");
+                help_command.stdout(process::Stdio::null());
+                help_command.stderr(process::Stdio::null());
+                if let Ok(help_exit_status) = help_command.status() {
+                    if !help_exit_status.success() {
+                        return Err(BuildKernelError::XbuildNotFound);
+                    }
                 }
             }
-            return Err(BuildKernelError::XbuildFailed {
+            return Err(BuildKernelError::BuildFailed {
                 stderr: output.stderr,
             });
         }
 
         // Retrieve binary paths
         let mut cmd = process::Command::new(cargo);
-        cmd.arg("xbuild");
+        cmd.args(&config.build_command);
         cmd.args(args);
         cmd.arg("--message-format").arg("json");
         let output = cmd.output().map_err(|err| BuildKernelError::Io {
@@ -91,17 +95,17 @@ impl Builder {
             error: err,
         })?;
         if !output.status.success() {
-            return Err(BuildKernelError::XbuildFailed {
+            return Err(BuildKernelError::BuildFailed {
                 stderr: output.stderr,
             });
         }
         let mut executables = Vec::new();
         for line in String::from_utf8(output.stdout)
-            .map_err(BuildKernelError::XbuildJsonOutputInvalidUtf8)?
+            .map_err(BuildKernelError::BuildJsonOutputInvalidUtf8)?
             .lines()
         {
             let mut artifact =
-                json::parse(line).map_err(BuildKernelError::XbuildJsonOutputInvalidJson)?;
+                json::parse(line).map_err(BuildKernelError::BuildJsonOutputInvalidJson)?;
             if let Some(executable) = artifact["executable"].take_string() {
                 executables.push(PathBuf::from(executable));
             }
@@ -161,11 +165,11 @@ impl Builder {
         }
         let mut bootloader_elf_path = None;
         for line in String::from_utf8(output.stdout)
-            .map_err(CreateBootimageError::XbuildJsonOutputInvalidUtf8)?
+            .map_err(CreateBootimageError::BuildJsonOutputInvalidUtf8)?
             .lines()
         {
             let mut artifact =
-                json::parse(line).map_err(CreateBootimageError::XbuildJsonOutputInvalidJson)?;
+                json::parse(line).map_err(CreateBootimageError::BuildJsonOutputInvalidJson)?;
             if let Some(executable) = artifact["executable"].take_string() {
                 if bootloader_elf_path
                     .replace(PathBuf::from(executable))
