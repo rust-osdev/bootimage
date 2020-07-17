@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.9.0 – 2020-07-17
+
 - **Breaking:** Make `cargo bootimage` use `cargo build` instead of `cargo xbuild` ([#63](https://github.com/rust-osdev/bootimage/pull/63))
 
 # 0.8.1 – 2020-07-17
