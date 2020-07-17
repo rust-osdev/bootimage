@@ -62,8 +62,6 @@ jobs:
 
     - name: "Install Rustup Components"
       run: rustup component add rust-src llvm-tools-preview
-    - name: "Install cargo-xbuild"
-      run: cargo install cargo-xbuild --debug
 
      # install QEMU
     - name: Install QEMU (Linux)
@@ -103,20 +101,20 @@ jobs:
       shell: bash {0}
       working-directory: example-kernels
 
-    - name: 'Run `cargo xrun` for "runner" kernel'
+    - name: 'Run `cargo run` for "runner" kernel'
       run: |
-        cargo xrun
+        cargo run
         if [ $? -eq 109 ]; then (exit 0); else (exit 1); fi
       shell: bash {0}
       working-directory: example-kernels/runner
 
-    - run: cargo xtest
+    - run: cargo test
       working-directory: example-kernels/runner-test
-      name: 'Run `cargo xtest` for "runner-test" kernel'
+      name: 'Run `cargo test` for "runner-test" kernel'
 
-    - run: cargo xtest -Z doctest-xcompile
+    - run: cargo test -Z doctest-xcompile
       working-directory: example-kernels/runner-doctest
-      name: 'Run `cargo xtest -Z doctest-xcompile` for "runner-doctest" kernel'
+      name: 'Run `cargo test -Z doctest-xcompile` for "runner-doctest" kernel'
 
   check_formatting:
     name: "Check Formatting"
