@@ -9,7 +9,7 @@ name = "no-harness"
 harness = false
 
 [dependencies]
-bootloader = "0.9.3"
+bootloader = "0.9.7"
 x86_64 = "0.11.0"
 
 [package.metadata.bootimage]
