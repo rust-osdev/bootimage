@@ -16,3 +16,10 @@ json = "0.12.4"
 anyhow = "1.0.28"
 thiserror = "1.0.16"
 cargo_metadata = "0.9.1"
+
+[package.metadata.release]
+no-dev-version = true
+pre-release-replacements = [
+    { file="Changelog.md", search="# Unreleased", replace="# Unreleased\n\n# {{version}} – {{date}}", exactly=1 },
+]
+pre-release-commit-message = "Release version {{version}}"
