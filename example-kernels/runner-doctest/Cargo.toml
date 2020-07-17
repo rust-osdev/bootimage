@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 bootloader = "0.9.7"
 x86_64 = "0.11.0"
+rlibc = "1.0.0"
 
 [package.metadata.bootimage]
 test-success-exit-code = 33 # (0x10 << 1) | 1
