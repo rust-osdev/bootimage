@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.8.1 – 2020-07-17
+
 - Add support for building bootloaders using `-Zbuild-std ([#62](https://github.com/rust-osdev/bootimage/pull/62))
 
 # 0.8.0
