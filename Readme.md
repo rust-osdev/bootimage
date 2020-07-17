@@ -31,7 +31,7 @@ Now you can build the kernel project and create a bootable disk image from it by
 cargo bootimage --target your_custom_target.json [other_args]
 ```
 
-The command will invoke [`cargo xbuild`](https://github.com/rust-osdev/cargo-xbuild), forwarding all passed options. Then it will build the specified bootloader together with the kernel to create a bootable disk image.
+The command will invoke `cargo build`, forwarding all passed options. Then it will build the specified bootloader together with the kernel to create a bootable disk image.
 
 ### Running
 
@@ -60,6 +60,10 @@ Configuration is done through a through a `[package.metadata.bootimage]` table i
 
 ```toml
 [package.metadata.bootimage]
+# The cargo subcommand that will be used for building the kernel.
+#
+# For building using the `cargo-xbuild` crate, set this to `xbuild`.
+build-command = ["build"]
 # The command invoked with the created bootimage (the "{}" will be replaced
 # with the path to the bootable disk image)
 # Applies to `bootimage run` and `bootimage runner`
