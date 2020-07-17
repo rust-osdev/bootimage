@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add support for building bootloaders using `-Zbuild-std ([#62](https://github.com/rust-osdev/bootimage/pull/62))
+
 # 0.8.0
 
 - **Breaking:**  Rewrite: Remove support for `bootimage {run, test}` ([#55](https://github.com/rust-osdev/bootimage/pull/55))
