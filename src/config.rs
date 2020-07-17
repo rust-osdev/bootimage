@@ -12,6 +12,10 @@ use toml::Value;
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct Config {
+    /// The command that is used for building the kernel for `cargo bootimage`.
+    ///
+    /// Defaults to `cargo build`.
+    pub build_command: Vec<String>,
     /// The run command that is invoked on `bootimage run` or `bootimage runner`
     ///
     /// The substring "{}" will be replaced with the path to the bootable disk image.
@@ -75,6 +79,9 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
             ("test-success-exit-code", Value::Integer(exit_code)) => {
                 config.test_success_exit_code = Some(exit_code as i32);
             }
+            ("build-command", Value::Array(array)) => {
+                config.build_command = Some(parse_string_array(array, "build-command")?);
+            }
             ("run-command", Value::Array(array)) => {
                 config.run_command = Some(parse_string_array(array, "run-command")?);
             }
@@ -110,6 +117,7 @@ fn parse_string_array(array: Vec<Value>, prop_name: &str) -> Result<Vec<String>>
 
 #[derive(Default)]
 struct ConfigBuilder {
+    build_command: Option<Vec<String>>,
     run_command: Option<Vec<String>>,
     run_args: Option<Vec<String>>,
     test_args: Option<Vec<String>>,
@@ -120,6 +128,9 @@ struct ConfigBuilder {
 impl Into<Config> for ConfigBuilder {
     fn into(self) -> Config {
         Config {
+            build_command: self
+                .build_command
+                .unwrap_or(vec!["cargo".into(), "build".into()]),
             run_command: self.run_command.unwrap_or_else(|| {
                 vec![
                     "qemu-system-x86_64".into(),
