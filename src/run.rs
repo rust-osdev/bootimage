@@ -69,6 +69,7 @@ pub fn run(
                 let qemu_exit_code = exit_status.code().ok_or(RunError::NoQemuExitCode)?;
                 match config.test_success_exit_code {
                     Some(code) if qemu_exit_code == code => 0,
+                    Some(_) if qemu_exit_code == 0 => 1,
                     _ => qemu_exit_code,
                 }
             }
