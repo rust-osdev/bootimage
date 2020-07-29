@@ -44,6 +44,16 @@ name = "runner-doctest"
 version = "0.1.0"
 dependencies = [
  "bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rlibc 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "runner-fail-reboot"
+version = "0.1.0"
+dependencies = [
+ "bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rlibc 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -52,6 +62,7 @@ name = "runner-test"
 version = "0.1.0"
 dependencies = [
  "bootloader 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rlibc 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "x86_64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
