@@ -24,7 +24,7 @@ pub fn run(
         .collect();
     if is_test {
         if config.test_no_reboot {
-            run_command.push("--no-reboot".to_owned());
+            run_command.push("-no-reboot".to_owned());
         }
         if let Some(args) = config.test_args {
             run_command.extend(args);

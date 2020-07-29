@@ -33,7 +33,7 @@ pub struct Config {
     /// An exit code that should be considered as success for test executables (applies to
     /// `bootimage runner`)
     pub test_success_exit_code: Option<i32>,
-    /// Whether the `--no-reboot` flag should be passed to test executables
+    /// Whether the `-no-reboot` flag should be passed to test executables
     ///
     /// Defaults to `true`
     pub test_no_reboot: bool,
