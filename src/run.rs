@@ -23,6 +23,9 @@ pub fn run(
         .map(|arg| arg.replace("{}", &format!("{}", image_path.display())))
         .collect();
     if is_test {
+        if config.test_no_reboot {
+            run_command.push("--no-reboot".to_owned());
+        }
         if let Some(args) = config.test_args {
             run_command.extend(args);
         }
