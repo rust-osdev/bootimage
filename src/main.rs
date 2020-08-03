@@ -29,6 +29,10 @@ pub fn main() -> Result<()> {
             help::print_help();
             return Ok(())
         }
+        Some("--version") => {
+            help::print_version();
+            return Ok(())
+        }
         Some(other) => return Err(anyhow!(
             "Unsupported subcommand `{:?}`. See `bootimage --help` for an overview of supported subcommands.", other
         )),
