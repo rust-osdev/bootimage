@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.10.0 – 2020-08-03
+
 - **Breaking:** Consider all other exit codes besides 'test-success-exit-code' as failures ([#65](https://github.com/rust-osdev/bootimage/pull/65))
   - Also runs tests with `-no-reboot` by default, configurable through a new `test-no-reboot` config key
 
