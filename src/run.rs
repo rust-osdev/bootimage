@@ -23,6 +23,9 @@ pub fn run(
         .map(|arg| arg.replace("{}", &format!("{}", image_path.display())))
         .collect();
     if is_test {
+        if config.test_no_reboot {
+            run_command.push("-no-reboot".to_owned());
+        }
         if let Some(args) = config.test_args {
             run_command.extend(args);
         }
@@ -69,6 +72,7 @@ pub fn run(
                 let qemu_exit_code = exit_status.code().ok_or(RunError::NoQemuExitCode)?;
                 match config.test_success_exit_code {
                     Some(code) if qemu_exit_code == code => 0,
+                    Some(_) if qemu_exit_code == 0 => 1,
                     _ => qemu_exit_code,
                 }
             }

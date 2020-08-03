@@ -33,6 +33,10 @@ pub struct Config {
     /// An exit code that should be considered as success for test executables (applies to
     /// `bootimage runner`)
     pub test_success_exit_code: Option<i32>,
+    /// Whether the `-no-reboot` flag should be passed to test executables
+    ///
+    /// Defaults to `true`
+    pub test_no_reboot: bool,
 }
 
 /// Reads the configuration from a `package.metadata.bootimage` in the given Cargo.toml.
@@ -91,6 +95,9 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
             ("test-args", Value::Array(array)) => {
                 config.test_args = Some(parse_string_array(array, "test-args")?);
             }
+            ("test-no-reboot", Value::Boolean(no_reboot)) => {
+                config.test_no_reboot = Some(no_reboot);
+            }
             (key, value) => {
                 return Err(anyhow!(
                     "unexpected `package.metadata.bootimage` \
@@ -123,6 +130,7 @@ struct ConfigBuilder {
     test_args: Option<Vec<String>>,
     test_timeout: Option<u32>,
     test_success_exit_code: Option<i32>,
+    test_no_reboot: Option<bool>,
 }
 
 impl Into<Config> for ConfigBuilder {
@@ -140,6 +148,7 @@ impl Into<Config> for ConfigBuilder {
             test_args: self.test_args,
             test_timeout: self.test_timeout.unwrap_or(60 * 5),
             test_success_exit_code: self.test_success_exit_code,
+            test_no_reboot: self.test_no_reboot.unwrap_or(true),
         }
     }
 }

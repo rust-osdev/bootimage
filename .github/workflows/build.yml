@@ -116,6 +116,10 @@ jobs:
       working-directory: example-kernels/runner-doctest
       name: 'Run `cargo test -Z doctest-xcompile` for "runner-doctest" kernel'
 
+    - run: cargo test
+      working-directory: example-kernels/runner-fail-reboot
+      name: 'Run `cargo test` for "runner-fail-reboot" kernel'
+
   check_formatting:
     name: "Check Formatting"
     runs-on: ubuntu-latest

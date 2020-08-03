@@ -82,6 +82,9 @@ test-success-exit-code = {integer}
 
 # The timeout for running a test through `bootimage test` or `bootimage runner` (in seconds)
 test-timeout = 300
+
+# Whether the `-no-reboot` flag should be passed to test executables
+test-no-reboot = true
 ```
 
 ## License
