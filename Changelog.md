@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.10.1 – 2020-08-03
+
 - Parse `--version` argument without subcommand (`bootimage --version`) ([#67](https://github.com/rust-osdev/bootimage/pull/67))
 
 # 0.10.0 – 2020-08-03
