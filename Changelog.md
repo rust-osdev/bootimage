@@ -1,5 +1,8 @@
 # Unreleased
 
+- **Breaking:** Consider all other exit codes besides 'test-success-exit-code' as failures ([#65](https://github.com/rust-osdev/bootimage/pull/65))
+  - Also runs tests with `-no-reboot` by default, configurable through a new `test-no-reboot` config key
+
 # 0.9.0 – 2020-07-17
 
 - **Breaking:** Make `cargo bootimage` use `cargo build` instead of `cargo xbuild` ([#63](https://github.com/rust-osdev/bootimage/pull/63))
