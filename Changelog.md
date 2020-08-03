@@ -1,5 +1,7 @@
 # Unreleased
 
+- Parse `--version` argument without subcommand (`bootimage --version`) ([#67](https://github.com/rust-osdev/bootimage/pull/67))
+
 # 0.10.0 – 2020-08-03
 
 - **Breaking:** Consider all other exit codes besides 'test-success-exit-code' as failures ([#65](https://github.com/rust-osdev/bootimage/pull/65))
