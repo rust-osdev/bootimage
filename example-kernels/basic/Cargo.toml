@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 bootloader = "0.9.7"
-x86_64 = "0.11.0"
+x86_64 = "0.12.1"
