@@ -29,14 +29,11 @@ jobs:
     - name: "Checkout Repository"
       uses: actions/checkout@v1
 
-    - name: Install Rustup (macOS)
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        echo ::add-path::$HOME/.cargo/bin
-      if: runner.os == 'macOS'
-
-    - name: Set Rustup profile to minimal
-      run: rustup set profile minimal
+    - name: Set up Rustup
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
 
     - name: "Print Rust Version"
       run: |
@@ -44,13 +41,19 @@ jobs:
         cargo -Vv
 
     - name: "Run cargo build"
-      run: cargo build
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
 
     - name: "Run cargo test"
-      run: cargo test
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
 
     - name: "Deny Warnings"
-      run: cargo build
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
       env:
         RUSTFLAGS: "-D warnings"
 
