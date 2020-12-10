@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.10.2 – 2020-12-10
+
 - Fix nightly breakage of doctests in workspaces ([#69](https://github.com/rust-osdev/bootimage/pull/69))
 
 # 0.10.1 – 2020-08-03
