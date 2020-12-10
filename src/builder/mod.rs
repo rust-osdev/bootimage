@@ -26,7 +26,18 @@ impl Builder {
     ///
     /// If None is passed for `manifest_path`, it is automatically searched.
     pub fn new(manifest_path: Option<PathBuf>) -> Result<Self, BuilderError> {
-        let manifest_path = manifest_path.unwrap_or(locate_cargo_manifest::locate_manifest()?);
+        let manifest_path = match manifest_path.or_else(|| {
+            std::env::var("CARGO_MANIFEST_DIR")
+                .ok()
+                .map(|dir| Path::new(&dir).join("Cargo.toml"))
+        }) {
+            Some(path) => path,
+            None => {
+                println!("WARNING: `CARGO_MANIFEST_DIR` env variable not set");
+                locate_cargo_manifest::locate_manifest()?
+            }
+        };
+
         Ok(Builder {
             manifest_path,
             project_metadata: None,
