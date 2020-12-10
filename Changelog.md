@@ -1,5 +1,7 @@
 # Unreleased
 
+- Fix nightly breakage of doctests in workspaces ([#69](https://github.com/rust-osdev/bootimage/pull/69))
+
 # 0.10.1 – 2020-08-03
 
 - Parse `--version` argument without subcommand (`bootimage --version`) ([#67](https://github.com/rust-osdev/bootimage/pull/67))
