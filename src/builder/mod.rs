@@ -136,6 +136,9 @@ impl Builder {
         bin_path: &Path,
         output_bin_path: &Path,
         quiet: bool,
+        grub: bool,
+        isodir: &Path,
+        bin_name: &str,
     ) -> Result<(), CreateBootimageError> {
         let bootloader_build_config = bootloader::BuildConfig::from_metadata(
             self.project_metadata()?,
@@ -197,7 +200,11 @@ impl Builder {
             BootloaderError::BootloaderInvalid("bootloader has no executable".into())
         })?;
 
-        disk_image::create_disk_image(&bootloader_elf_path, output_bin_path)?;
+        if grub {
+            disk_image::create_iso_image(&bootloader_elf_path, output_bin_path, isodir, &bin_name)?;
+        } else {
+            disk_image::create_disk_image(&bootloader_elf_path, output_bin_path)?;
+        }
 
         Ok(())
     }

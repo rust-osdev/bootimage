@@ -23,6 +23,7 @@ impl BuildCommand {
         let mut manifest_path: Option<PathBuf> = None;
         let mut cargo_args = Vec::new();
         let mut quiet = false;
+        let mut grub = false;
         {
             fn set<T>(arg: &mut Option<T>, value: Option<T>) -> Result<()> {
                 let previous = mem::replace(arg, value);
@@ -30,7 +31,7 @@ impl BuildCommand {
                     return Err(anyhow!("multiple arguments of same type provided"));
                 }
                 Ok(())
-            };
+            }
 
             let mut arg_iter = args;
             while let Some(arg) = arg_iter.next() {
@@ -43,6 +44,9 @@ impl BuildCommand {
                     }
                     "--quiet" => {
                         quiet = true;
+                    }
+                    "--grub" => {
+                        grub = true;
                     }
                     "--manifest-path" => {
                         let next = arg_iter.next();
@@ -76,6 +80,7 @@ impl BuildCommand {
             manifest_path,
             cargo_args,
             quiet,
+            grub,
         }))
     }
 }
@@ -89,6 +94,8 @@ pub struct BuildArgs {
     cargo_args: Vec<String>,
     /// Suppress any output to stdout.
     quiet: bool,
+    /// Generates an iso with `grub-mkrescue`
+    grub: bool,
 }
 
 impl BuildArgs {
@@ -105,5 +112,10 @@ impl BuildArgs {
     /// Whether a `--quiet` flag was passed.
     pub fn quiet(&self) -> bool {
         self.quiet
+    }
+
+    /// Whether a `--grub` flag was passed.
+    pub fn grub(&self) -> bool {
+        self.grub
     }
 }

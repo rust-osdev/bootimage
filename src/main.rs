@@ -75,6 +75,8 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         .starts_with("rustdoctest");
     let is_test = is_doctest || exe_parent.ends_with("deps");
 
+    let iso_files = exe_parent.join("isofiles");
+
     let bin_name = args
         .executable
         .file_stem()
@@ -82,7 +84,11 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         .to_str()
         .ok_or_else(|| anyhow!("kernel executable file stem is not valid UTF-8"))?;
 
-    let output_bin_path = exe_parent.join(format!("bootimage-{}.bin", bin_name));
+    let output_bin_path = if args.grub {
+        exe_parent.join(format!("bootimage-{}.iso", bin_name))
+    } else {
+        exe_parent.join(format!("bootimage-{}.bin", bin_name))
+    };
     let executable_canonicalized = args.executable.canonicalize().with_context(|| {
         format!(
             "failed to canonicalize executable path `{}`",
@@ -103,6 +109,9 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         &executable_canonicalized,
         &output_bin_path,
         args.quiet,
+        args.grub,
+        &iso_files,
+        &bin_name,
     )?;
 
     let exit_code = run::run(config, args, &output_bin_path, is_test)?;
