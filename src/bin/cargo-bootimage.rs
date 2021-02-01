@@ -83,15 +83,19 @@ fn build(args: BuildArgs) -> Result<()> {
         } else {
             out_dir.join(format!("bootimage-{}.bin", bin_name))
         };
-        builder.create_bootimage(
-            kernel_manifest_path,
-            &executable,
-            &bootimage_path,
+
+        let bootimage = bootimage::builder::Bootimage {
+            kernel_manifest: &kernel_manifest_path,
+            bin_path: &executable,
+            output_bin_path: &bootimage_path,
             quiet,
+            release: args.release(),
             grub,
-            &iso_files,
-            &bin_name,
-        )?;
+            iso_dir_path: &iso_files,
+            bin_name: &bin_name,
+        };
+
+        builder.create_bootimage(&bootimage)?;
         if !args.quiet() {
             println!(
                 "Created bootimage for `{}` at `{}`",

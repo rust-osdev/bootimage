@@ -21,6 +21,7 @@ impl RunnerCommand {
         let mut quiet = false;
         let mut runner_args = None;
         let mut grub = false;
+        let mut release = false;
 
         let mut arg_iter = args.fuse();
 
@@ -49,6 +50,9 @@ impl RunnerCommand {
                 "--grub" => {
                     grub = true;
                 }
+                "--release" => {
+                    release = true;
+                }
                 exe => {
                     executable = Some(PathBuf::from(exe));
                 }
@@ -59,6 +63,7 @@ impl RunnerCommand {
             executable: executable
                 .ok_or_else(|| anyhow!("excepted path to kernel executable as first argument"))?,
             quiet,
+            release,
             grub,
             runner_args,
         }))
@@ -72,6 +77,8 @@ pub struct RunnerArgs {
     pub executable: PathBuf,
     /// Suppress any output to stdout.
     pub quiet: bool,
+    /// Build release version
+    pub release: bool,
     /// Generates an iso with `grub-mkrescue`
     pub grub: bool,
     /// Additional arguments passed to the runner

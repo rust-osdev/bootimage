@@ -24,6 +24,7 @@ impl BuildCommand {
         let mut cargo_args = Vec::new();
         let mut quiet = false;
         let mut grub = false;
+        let mut release = false;
         {
             fn set<T>(arg: &mut Option<T>, value: Option<T>) -> Result<()> {
                 let previous = mem::replace(arg, value);
@@ -44,6 +45,9 @@ impl BuildCommand {
                     }
                     "--quiet" => {
                         quiet = true;
+                    }
+                    "--release" => {
+                        release = true;
                     }
                     "--grub" => {
                         grub = true;
@@ -80,6 +84,7 @@ impl BuildCommand {
             manifest_path,
             cargo_args,
             quiet,
+            release,
             grub,
         }))
     }
@@ -94,6 +99,8 @@ pub struct BuildArgs {
     cargo_args: Vec<String>,
     /// Suppress any output to stdout.
     quiet: bool,
+    /// Build release version
+    release: bool,
     /// Generates an iso with `grub-mkrescue`
     grub: bool,
 }
@@ -114,6 +121,10 @@ impl BuildArgs {
         self.quiet
     }
 
+    /// Whether a `--release` flag was passed.
+    pub fn release(&self) -> bool {
+        self.release
+    }
     /// Whether a `--grub` flag was passed.
     pub fn grub(&self) -> bool {
         self.grub

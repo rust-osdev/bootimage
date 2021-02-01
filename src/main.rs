@@ -104,15 +104,18 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         .context("Failed to read CARGO_MANIFEST_DIR environment variable")?;
     let kernel_manifest_path = Path::new(&manifest_dir).join("Cargo.toml");
 
-    builder.create_bootimage(
-        &kernel_manifest_path,
-        &executable_canonicalized,
-        &output_bin_path,
-        args.quiet,
-        args.grub,
-        &iso_files,
-        &bin_name,
-    )?;
+    let bootimage = bootimage::builder::Bootimage {
+        kernel_manifest: &kernel_manifest_path,
+        bin_path: &executable_canonicalized,
+        output_bin_path: &output_bin_path,
+        quiet: args.quiet,
+        release: args.release,
+        grub: args.grub,
+        iso_dir_path: &iso_files,
+        bin_name: &bin_name,
+    };
+
+    builder.create_bootimage(&bootimage)?;
 
     let exit_code = run::run(config, args, &output_bin_path, is_test)?;
 
