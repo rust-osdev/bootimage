@@ -139,4 +139,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: rustup toolchain install nightly --profile minimal --component clippy
-    - run: cargo +nightly clippy -- -D warnings
+    - name: "Run `cargo clippy`"
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
