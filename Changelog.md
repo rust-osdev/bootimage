@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.10.3 – 2021-04-01
+
 - Fix "unnnecessary trailing semicolon" warning on Rust 1.51
 
 # 0.10.2 – 2020-12-10
