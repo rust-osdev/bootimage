@@ -30,7 +30,7 @@ impl BuildCommand {
                     return Err(anyhow!("multiple arguments of same type provided"));
                 }
                 Ok(())
-            };
+            }
 
             let mut arg_iter = args;
             while let Some(arg) = arg_iter.next() {
