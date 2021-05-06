@@ -10,7 +10,7 @@ harness = false
 
 [dependencies]
 bootloader = "0.9.7"
-x86_64 = "0.13.2"
+x86_64 = "0.14.1"
 rlibc = "1.0.0"
 
 [package.metadata.bootimage]
