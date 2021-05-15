@@ -16,7 +16,7 @@ First you need to add a dependency on the [`bootloader`](https://github.com/rust
 # in your Cargo.toml
 
 [dependencies]
-bootloader = "0.6.4"
+bootloader = "0.9.8"
 ```
 
 **Note**: At least bootloader version `0.5.1` is required since `bootimage 0.7.0`. For earlier bootloader versions, use `bootimage 0.6.6`.
