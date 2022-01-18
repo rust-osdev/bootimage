@@ -24,9 +24,9 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "bootloader"
-version = "0.9.20"
+version = "0.9.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b0718f186cd449b21f044683933284ed90fb83f3e13949ff0e03b0b6f02e38e"
+checksum = "a62c8f6168cd106687ee36a2b71a46c4144d73399f72814104d33094b8092fd2"
 
 [[package]]
 name = "rlibc"
