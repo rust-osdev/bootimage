@@ -56,7 +56,7 @@ The `bootimage` has built-in support for running unit and integration tests of y
 
 ## Configuration
 
-Configuration is done through a through a `[package.metadata.bootimage]` table in the `Cargo.toml` of your kernel. The following options are available:
+Configuration is done through a `[package.metadata.bootimage]` table in the `Cargo.toml` of your kernel. The following options are available:
 
 ```toml
 [package.metadata.bootimage]
