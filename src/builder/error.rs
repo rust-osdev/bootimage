@@ -18,7 +18,7 @@ pub enum BuildKernelError {
     Io {
         /// Desciption of the failed I/O operation
         message: &'static str,
-        /// The I/O error that occured
+        /// The I/O error that occurred
         error: io::Error,
     },
 
@@ -49,7 +49,7 @@ pub enum BuildKernelError {
 #[non_exhaustive]
 pub enum CreateBootimageError {
     /// Failed to build the bootloader.
-    #[error("An error occured while trying to build the bootloader: {0}")]
+    #[error("An error occurred while trying to build the bootloader: {0}")]
     Bootloader(#[from] BootloaderError),
 
     /// Error while running `cargo metadata`
@@ -64,7 +64,7 @@ pub enum CreateBootimageError {
     },
 
     /// Disk image creation failed
-    #[error("An error occured while trying to create the disk image: {0}")]
+    #[error("An error occurred while trying to create the disk image: {0}")]
     DiskImage(#[from] DiskImageError),
 
     /// An unexpected I/O error occurred
@@ -72,7 +72,7 @@ pub enum CreateBootimageError {
     Io {
         /// Desciption of the failed I/O operation
         message: &'static str,
-        /// The I/O error that occured
+        /// The I/O error that occurred
         error: io::Error,
     },
 
@@ -145,7 +145,7 @@ pub enum DiskImageError {
     Io {
         /// Desciption of the failed I/O operation
         message: &'static str,
-        /// The I/O error that occured
+        /// The I/O error that occurred
         error: io::Error,
     },
 }

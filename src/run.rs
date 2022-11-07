@@ -101,17 +101,17 @@ pub enum RunError {
     #[error("Failed to read QEMU exit code")]
     NoQemuExitCode,
 
-    /// An I/O error occured
-    #[error("{context}: An I/O error occured: {error}")]
+    /// An I/O error occurred
+    #[error("{context}: An I/O error occurred: {error}")]
     Io {
         /// The operation that caused the I/O error.
         context: IoErrorContext,
-        /// The I/O error that occured.
+        /// The I/O error that occurred.
         error: io::Error,
     },
 }
 
-/// An I/O error occured while trying to run the disk image.
+/// An I/O error occurred while trying to run the disk image.
 #[derive(Debug, Error)]
 pub enum IoErrorContext {
     /// QEMU command for non-test failed
