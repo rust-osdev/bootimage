@@ -57,18 +57,41 @@ fn read_config_inner(manifest_path: &Path) -> Result<Config> {
             .context("Failed to parse Cargo.toml")?
     };
 
-    let metadata = cargo_toml
-        .get("package")
-        .and_then(|table| table.get("metadata"))
-        .and_then(|table| table.get("bootimage"));
-    let metadata = match metadata {
-        None => {
-            return Ok(ConfigBuilder::default().into());
-        }
-        Some(metadata) => metadata
-            .as_table()
-            .ok_or_else(|| anyhow!("Bootimage configuration invalid: {:?}", metadata))?,
+    let target = std::env::var("TARGET");
+    let target_metadata = match target {
+        Ok(target) => {
+            let metadata = cargo_toml
+                .get("package")
+                .and_then(|table| table.get("metadata"))
+                .and_then(|table| table.get(target))
+                .and_then(|table| table.get("bootimage"));
+                match metadata {
+                    Some(metadata) => metadata.as_table(),
+                    None => None
+                }
+        },
+        Err(_) => None
     };
+    let metadata = match target_metadata {
+        // have target-specific config
+        Some(meta) => meta,
+        // no target-specific config, fallback to default
+        None => {
+            let metadata = cargo_toml
+                .get("package")
+                .and_then(|table| table.get("metadata"))
+                .and_then(|table| table.get("bootimage"));
+            match metadata {
+                None => {
+                    return Ok(ConfigBuilder::default().into());
+                }
+                Some(metadata) => metadata
+                    .as_table()
+                    .ok_or_else(|| anyhow!("Bootimage configuration invalid: {:?}", metadata))?,
+            }
+        }   
+    };
+    
 
     let mut config = ConfigBuilder::default();
 
