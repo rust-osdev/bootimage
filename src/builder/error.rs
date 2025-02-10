@@ -133,6 +133,13 @@ pub enum DiskImageError {
     #[error("Could not find `llvm-objcopy` in the `llvm-tools-preview` rustup component.")]
     LlvmObjcopyNotFound,
 
+    /// The build target is not supported
+    #[error("The specified build target '{target}' is not supported. Supported architectures are: x86_64, aarch64")]
+    TargetNotSupported {
+        /// The specified build target (from env:TARGET)
+        target: String
+    },
+
     /// The `llvm-objcopy` command failed
     #[error("Failed to run `llvm-objcopy`: {}", String::from_utf8_lossy(.stderr))]
     ObjcopyFailed {
