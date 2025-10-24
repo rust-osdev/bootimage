@@ -142,6 +142,8 @@ impl Into<Config> for ConfigBuilder {
                     "qemu-system-x86_64".into(),
                     "-drive".into(),
                     "format=raw,file={}".into(),
+                    "-cpu".into(),
+                    "qemu64,+popcnt".into(),
                 ]
             }),
             run_args: self.run_args,
