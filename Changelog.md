@@ -1,5 +1,8 @@
 # Unreleased
 
+- Fix bootloader build on latest nightlies by passing `-Zjson-target-spec` ([#105](https://github.com/rust-osdev/bootimage/pull/105))
+- Fix typos in error messages ([#89](https://github.com/rust-osdev/bootimage/pull/89))
+
 # 0.10.3 – 2021-04-01
 
 - Fix "unnnecessary trailing semicolon" warning on Rust 1.51
