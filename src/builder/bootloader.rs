@@ -124,6 +124,7 @@ impl BuildConfig {
         cmd.arg("--features")
             .arg(self.features.as_slice().join(" "));
         cmd.arg("--target").arg(&self.target);
+        cmd.arg("-Zjson-target-spec");
         cmd.arg("--release");
         cmd.env("KERNEL", &self.kernel_bin_path);
         cmd.env("KERNEL_MANIFEST", &self.kernel_manifest_path);
