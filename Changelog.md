@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.10.4 – 2026-02-27
+
 - Fix bootloader build on latest nightlies by passing `-Zjson-target-spec` ([#105](https://github.com/rust-osdev/bootimage/pull/105))
 - Fix typos in error messages ([#89](https://github.com/rust-osdev/bootimage/pull/89))
 

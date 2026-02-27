@@ -10,7 +10,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
 name = "bootimage"
-version = "0.10.3"
+version = "0.10.4"
 dependencies = [
  "anyhow",
  "cargo_metadata",
