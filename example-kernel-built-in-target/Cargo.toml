@@ -1,0 +1,8 @@
+[package]
+name = "example-kernel-built-in-target"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+bootloader = "0.9.7"
+x86_64 = "0.14.1"

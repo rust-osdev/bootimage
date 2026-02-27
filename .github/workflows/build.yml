@@ -90,6 +90,10 @@ jobs:
     - name: "Print QEMU Version"
       run: qemu-system-x86_64 --version
 
+    - name: 'Build kernel with built-in target (no json-target-spec config)'
+      run: cargo bootimage --target x86_64-unknown-none
+      working-directory: example-kernel-built-in-target
+
     - name: 'Build "basic" Kernel'
       run: cargo bootimage --target ../x86_64-bootimage-example-kernels.json
       working-directory: example-kernels/basic
