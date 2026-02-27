@@ -14,6 +14,9 @@ pub fn test_runner(tests: &[&dyn Fn()]) {
     unsafe {
         exit_qemu(ExitCode::Success);
     }
+    // Keep spinning so that the fallthrough `exit_qemu(Failed)` in `_start`
+    // cannot overwrite the exit code before QEMU shuts down (TCG race on ARM64).
+    loop {}
 }
 
 #[test_case]
