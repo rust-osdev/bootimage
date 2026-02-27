@@ -16,6 +16,8 @@ extern crate rlibc;
 /// extern "C" fn start() {
 ///     assert_eq!(add(1, 2), 3);
 ///     unsafe { exit_qemu(ExitCode::Success); }
+///     // Spin until QEMU shuts down to avoid overwriting the exit code (TCG race on ARM64).
+///     loop {}
 /// }
 /// ```
 pub fn add(a: u32, b: u32) -> u32 {
@@ -32,6 +34,8 @@ pub fn add(a: u32, b: u32) -> u32 {
 /// extern "C" fn start() {
 ///     assert_eq!(mul(2, 3), 6);
 ///     unsafe { exit_qemu(ExitCode::Success); }
+///     // Spin until QEMU shuts down to avoid overwriting the exit code (TCG race on ARM64).
+///     loop {}
 /// }
 /// ```
 pub fn mul(a: u32, b: u32) -> u32 {
@@ -47,6 +51,9 @@ fn test_runner(tests: &[&dyn Fn()]) {
     unsafe {
         exit_qemu(ExitCode::Success);
     }
+    // Keep spinning so that the fallthrough `exit_qemu(Failed)` in `_start`
+    // cannot overwrite the exit code before QEMU shuts down (TCG race on ARM64).
+    loop {}
 }
 
 pub enum ExitCode {
