@@ -67,13 +67,27 @@ pub(crate) fn runner(args: RunnerArgs) -> Result<i32> {
         .executable
         .parent()
         .ok_or_else(|| anyhow!("kernel executable has no parent"))?;
-    let is_doctest = exe_parent
+    let exe_parent_name = exe_parent
         .file_name()
         .ok_or_else(|| anyhow!("kernel executable's parent has no file name"))?
         .to_str()
-        .ok_or_else(|| anyhow!("kernel executable's parent file name is not valid UTF-8"))?
-        .starts_with("rustdoctest");
-    let is_test = is_doctest || exe_parent.ends_with("deps");
+        .ok_or_else(|| anyhow!("kernel executable's parent file name is not valid UTF-8"))?;
+    let is_doctest = exe_parent_name.starts_with("rustdoctest");
+    // Cargo compiles test and benchmark executables into a separate directory,
+    // which lets us distinguish them from normal `run` binaries.
+    //
+    // - In the classic build-dir layout they live in `<profile>/deps/`.
+    // - Since the build-dir layout v2 (nightly, rust-lang/cargo#17258) they
+    //   live in `<profile>/build/<pkg>/<hash>/out/` instead, i.e. the `out`
+    //   directory's third ancestor is the `build` directory.
+    let is_test = is_doctest
+        || exe_parent_name == "deps"
+        || (exe_parent_name == "out"
+            && exe_parent
+                .ancestors()
+                .nth(3)
+                .and_then(|ancestor| ancestor.file_name())
+                == Some("build".as_ref()));
 
     let bin_name = args
         .executable
