@@ -1,5 +1,9 @@
 # Unreleased
 
+# 0.10.5 – 2026-08-03
+
+- Fix test detection for the new `build-dir` layout of cargo ([#112](https://github.com/rust-osdev/bootimage/pull/112))
+
 # 0.10.4 – 2026-02-27
 
 - Fix bootloader build on latest nightlies by passing `-Zjson-target-spec` ([#105](https://github.com/rust-osdev/bootimage/pull/105))
