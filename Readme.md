@@ -87,6 +87,10 @@ test-timeout = 300
 test-no-reboot = true
 ```
 
+## Target-specific configuration
+
+Target-specific configuration can be done through `[package.metadata.<target-triple>.bootimage]`. The default architecture if none is specified is `x86_64`.
+
 ## License
 
 Licensed under either of

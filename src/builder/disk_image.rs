@@ -10,11 +10,23 @@ pub fn create_disk_image(
         .tool(&llvm_tools::exe("llvm-objcopy"))
         .ok_or(DiskImageError::LlvmObjcopyNotFound)?;
 
+    let format = match std::env::var("TARGET") {
+        Ok(target) => {
+            match target.split("-").next() {
+                Some("x86_64") => "elf64-x86-64",
+                Some("aarch64") => "elf64-aarch64",
+                _ => return Err(DiskImageError::TargetNotSupported { target })
+            }
+        },
+        Err(_) => "elf64-x86-64"
+    };
+
     // convert bootloader to binary
     let mut cmd = Command::new(objcopy);
-    cmd.arg("-I").arg("elf64-x86-64");
+    cmd.arg("-I").arg(format);
     cmd.arg("-O").arg("binary");
-    cmd.arg("--binary-architecture=i386:x86-64");
+    // --binary-architecture is deprecated
+    //cmd.arg("--binary-architecture=i386:x86-64");
     cmd.arg(bootloader_elf_path);
     cmd.arg(output_bin_path);
     let output = cmd.output().map_err(|err| DiskImageError::Io {
